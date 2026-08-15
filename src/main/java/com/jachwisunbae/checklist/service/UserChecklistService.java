@@ -1,11 +1,8 @@
 package com.jachwisunbae.checklist.service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,14 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.jachwisunbae.checklist.entity.SystemCheckItem;
 import com.jachwisunbae.checklist.entity.UserChecklist;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
+import com.jachwisunbae.checklist.service.policy.UserChecklistPolicy;
 import com.jachwisunbae.checklist.repository.SystemCheckItemRepository;
 import com.jachwisunbae.checklist.repository.UserChecklistRepository;
 import com.jachwisunbae.checklist.service.dto.CreateUserChecklistCommand;
 import com.jachwisunbae.checklist.service.dto.UpdateUserChecklistCommand;
 import com.jachwisunbae.checklist.service.dto.UserChecklistDetailResult;
 import com.jachwisunbae.checklist.service.dto.UserChecklistSummaryResult;
-import com.jachwisunbae.checklist.type.ItemType;
 import com.jachwisunbae.checklist.type.Stage;
+import com.jachwisunbae.checklist.service.validation.UserChecklistValidator;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.member.repository.MemberRepository;
@@ -31,19 +29,23 @@ import com.jachwisunbae.member.repository.MemberRepository;
 @Transactional(readOnly = true)
 public class UserChecklistService {
 
-    private static final int MAX_ITEM_COUNT = 100;
-
     private final UserChecklistRepository checklistRepository;
     private final SystemCheckItemRepository systemItemRepository;
     private final MemberRepository memberRepository;
+    private final UserChecklistValidator validator;
+    private final UserChecklistPolicy policy;
 
     public UserChecklistService(
             UserChecklistRepository checklistRepository,
             SystemCheckItemRepository systemItemRepository,
-            MemberRepository memberRepository) {
+            MemberRepository memberRepository,
+            UserChecklistValidator validator,
+            UserChecklistPolicy policy) {
         this.checklistRepository = checklistRepository;
         this.systemItemRepository = systemItemRepository;
         this.memberRepository = memberRepository;
+        this.validator = validator;
+        this.policy = policy;
     }
 
     @Transactional
@@ -93,15 +95,12 @@ public class UserChecklistService {
     }
 
     private List<Long> resolveCreateItemIds(CreateUserChecklistCommand command) {
-        List<Long> requestedIds = requireDistinctIds(command.checkItemIds(), true);
-        validateStageAndActive(command.stage(), findRequestedItems(requestedIds), Set.of());
-
-        List<Long> finalIds = new ArrayList<>();
-        systemItemRepository.findActiveCoreByStage(command.stage()).stream()
-                .map(SystemCheckItem::getId)
-                .forEach(finalIds::add);
-        requestedIds.stream().filter(id -> !finalIds.contains(id)).forEach(finalIds::add);
-        requireItemCount(finalIds);
+        List<Long> requestedIds = validator.validateItemIds(command.checkItemIds(), true);
+        validator.validateItems(command.stage(), findRequestedItems(requestedIds), Set.of());
+        List<Long> finalIds = policy.resolveCreateItemIds(
+                requestedIds,
+                systemItemRepository.findActiveCoreByStage(command.stage()));
+        validator.validateFinalItemCount(finalIds);
         return finalIds;
     }
 
@@ -119,29 +118,14 @@ public class UserChecklistService {
         Set<Long> existingIds = checklistRepository.findItems(checklist.getId()).stream()
                 .map(UserChecklistItem::getSystemCheckItemId)
                 .collect(Collectors.toSet());
-        List<Long> requestedIds = requireDistinctIds(requestedItemIds, false);
-        validateStageAndActive(checklist.getStage(), findRequestedItems(requestedIds), existingIds);
-        validateRequiredCoreItems(checklist.getStage(), existingIds, requestedIds);
-        requireItemCount(requestedIds);
+        List<Long> requestedIds = validator.validateItemIds(requestedItemIds, false);
+        validator.validateItems(checklist.getStage(), findRequestedItems(requestedIds), existingIds);
+        policy.validateRequiredCoreItems(
+                systemItemRepository.findAllByIds(List.copyOf(existingIds)),
+                systemItemRepository.findActiveCoreByStage(checklist.getStage()),
+                requestedIds);
+        validator.validateFinalItemCount(requestedIds);
         return requestedIds;
-    }
-
-    private void validateRequiredCoreItems(
-            Stage stage,
-            Set<Long> existingIds,
-            List<Long> requestedIds) {
-        Set<Long> requiredCoreIds = systemItemRepository.findAllByIds(List.copyOf(existingIds)).stream()
-                .filter(item -> item.getItemType() == ItemType.CORE)
-                .map(SystemCheckItem::getId)
-                .collect(Collectors.toSet());
-        systemItemRepository.findActiveCoreByStage(stage).stream()
-                .map(SystemCheckItem::getId)
-                .forEach(requiredCoreIds::add);
-        if (!requestedIds.containsAll(requiredCoreIds)) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_CORE_ITEM_REQUIRED,
-                    "핵심 항목은 제거할 수 없습니다.");
-        }
     }
 
     private UserChecklist getOwnedChecklist(Long memberId, Long checklistId) {
@@ -160,66 +144,10 @@ public class UserChecklistService {
                 "소유한 활성 체크리스트를 찾을 수 없습니다.");
     }
 
-    private List<Long> requireDistinctIds(List<Long> ids, boolean allowEmpty) {
-        if (ids == null
-                || (!allowEmpty && ids.isEmpty())
-                || ids.size() > MAX_ITEM_COUNT
-                || ids.stream().anyMatch(Objects::isNull)) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_ITEMS_INVALID,
-                    "항목은 1개 이상 100개 이하여야 합니다.");
-        }
-        LinkedHashSet<Long> distinctIds = new LinkedHashSet<>(ids);
-        if (distinctIds.size() != ids.size()) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_ITEMS_INVALID,
-                    "같은 항목을 중복할 수 없습니다.");
-        }
-        return List.copyOf(distinctIds);
-    }
-
     private List<SystemCheckItem> findRequestedItems(List<Long> ids) {
         List<SystemCheckItem> items = systemItemRepository.findAllByIds(ids);
-        if (items.size() != ids.size()) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_ITEM_NOT_FOUND,
-                    "시스템 체크 항목을 찾을 수 없습니다.");
-        }
+        validator.validateExistingItems(ids, items);
         return items;
-    }
-
-    private void validateStageAndActive(
-            Stage stage,
-            List<SystemCheckItem> items,
-            Set<Long> existingIds) {
-        for (SystemCheckItem item : items) {
-            validateSameStage(stage, item);
-            validateActiveOrExisting(existingIds, item);
-        }
-    }
-
-    private void validateSameStage(Stage stage, SystemCheckItem item) {
-        if (item.getStage() != stage) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_ITEM_STAGE_MISMATCH,
-                    "다른 단계의 항목을 추가할 수 없습니다.");
-        }
-    }
-
-    private void validateActiveOrExisting(Set<Long> existingIds, SystemCheckItem item) {
-        if (!item.isActive() && !existingIds.contains(item.getId())) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
-                    "비활성 항목을 새로 추가할 수 없습니다.");
-        }
-    }
-
-    private void requireItemCount(List<Long> itemIds) {
-        if (itemIds.isEmpty() || itemIds.size() > MAX_ITEM_COUNT) {
-            throw new BusinessException(
-                    DomainErrorCode.CHECKLIST_ITEMS_INVALID,
-                    "최종 항목은 1개 이상 100개 이하여야 합니다.");
-        }
     }
 
     private UserChecklistDetailResult createDetailResult(UserChecklist checklist) {
