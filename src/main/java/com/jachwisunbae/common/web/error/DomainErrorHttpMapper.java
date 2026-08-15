@@ -1,0 +1,33 @@
+package com.jachwisunbae.common.web.error;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+
+import com.jachwisunbae.common.exception.DomainErrorCode;
+
+@Component
+public class DomainErrorHttpMapper {
+
+    public HttpStatus statusOf(DomainErrorCode code) {
+        return switch (code) {
+            case SYSTEM_CHECK_ITEM_STAGE_REQUIRED,
+                    SYSTEM_CHECK_ITEM_TYPE_REQUIRED,
+                    SYSTEM_CHECK_ITEM_QUESTION_INVALID,
+                    MEMBER_SUBJECT_INVALID,
+                    MEMBER_EMAIL_INVALID,
+                    MEMBER_NAME_INVALID,
+                    MEMBER_LAST_LOGIN_AT_REQUIRED,
+                    USER_CHECKLIST_MEMBER_REQUIRED,
+                    USER_CHECKLIST_NAME_INVALID,
+                    USER_CHECKLIST_STAGE_REQUIRED,
+                    USER_CHECKLIST_DELETED_AT_REQUIRED,
+                    CHECKLIST_ITEMS_INVALID,
+                    CHECKLIST_ITEM_STAGE_MISMATCH,
+                    CHECKLIST_CORE_ITEM_REQUIRED,
+                    CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED -> HttpStatus.BAD_REQUEST;
+            case MEMBER_NOT_FOUND,
+                    CHECKLIST_NOT_FOUND,
+                    CHECKLIST_ITEM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+        };
+    }
+}
