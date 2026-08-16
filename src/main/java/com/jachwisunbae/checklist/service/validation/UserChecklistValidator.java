@@ -18,6 +18,7 @@ public class UserChecklistValidator {
     private static final int MAX_ITEM_COUNT = 100;
 
     public List<Long> validateItemIds(List<Long> ids, boolean allowEmpty) {
+        // 생성 요청은 CORE 자동 포함 전이므로 빈 배열을 허용하지만, 수정은 최종 배열 자체가 비면 안 된다.
         if (ids == null
                 || (!allowEmpty && ids.isEmpty())
                 || ids.size() > MAX_ITEM_COUNT
@@ -48,6 +49,7 @@ public class UserChecklistValidator {
             Stage stage,
             List<SystemCheckItem> items,
             Set<Long> existingIds) {
+        // 기존 항목 여부를 함께 받아 비활성 항목의 유지·재정렬과 신규 추가를 구분한다.
         for (SystemCheckItem item : items) {
             validateSameStage(stage, item);
             validateActiveOrExisting(existingIds, item);
