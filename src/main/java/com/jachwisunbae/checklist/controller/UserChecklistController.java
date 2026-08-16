@@ -22,6 +22,7 @@ import com.jachwisunbae.checklist.controller.dto.UserChecklistSummaryResponse;
 import com.jachwisunbae.checklist.service.UserChecklistService;
 import com.jachwisunbae.checklist.type.Stage;
 import com.jachwisunbae.common.web.SuccessResponse;
+import com.jachwisunbae.auth.web.AuthenticatedMemberId;
 
 import jakarta.validation.Valid;
 
@@ -38,16 +39,17 @@ public class UserChecklistController {
 
     @PostMapping
     public ResponseEntity<SuccessResponse<UserChecklistDetailResponse>> create(
+            @AuthenticatedMemberId Long memberId,
             @Valid @RequestBody CreateUserChecklistRequest request) {
         UserChecklistDetailResponse response = UserChecklistDetailResponse.from(
-                userChecklistService.create(request.memberId(), request.toCommand()));
+                userChecklistService.create(memberId, request.toCommand()));
         return ResponseEntity.created(URI.create("/api/checklists/" + response.checklistId()))
                 .body(SuccessResponse.of(response));
     }
 
     @GetMapping
     public SuccessResponse<List<UserChecklistSummaryResponse>> findAll(
-            @RequestParam Long memberId,
+            @AuthenticatedMemberId Long memberId,
             @RequestParam(required = false) Stage stage) {
         return SuccessResponse.of(userChecklistService.findAll(memberId, stage).stream()
                 .map(UserChecklistSummaryResponse::from)
@@ -56,7 +58,7 @@ public class UserChecklistController {
 
     @GetMapping("/{checklistId}")
     public SuccessResponse<UserChecklistDetailResponse> findById(
-            @RequestParam Long memberId,
+            @AuthenticatedMemberId Long memberId,
             @PathVariable Long checklistId) {
         return SuccessResponse.of(UserChecklistDetailResponse.from(
                 userChecklistService.findById(memberId, checklistId)));
@@ -64,15 +66,16 @@ public class UserChecklistController {
 
     @PutMapping("/{checklistId}")
     public SuccessResponse<UserChecklistDetailResponse> update(
+            @AuthenticatedMemberId Long memberId,
             @PathVariable Long checklistId,
             @Valid @RequestBody UpdateUserChecklistRequest request) {
         return SuccessResponse.of(UserChecklistDetailResponse.from(
-                userChecklistService.update(request.memberId(), checklistId, request.toCommand())));
+                userChecklistService.update(memberId, checklistId, request.toCommand())));
     }
 
     @DeleteMapping("/{checklistId}")
     public ResponseEntity<Void> delete(
-            @RequestParam Long memberId,
+            @AuthenticatedMemberId Long memberId,
             @PathVariable Long checklistId) {
         userChecklistService.delete(memberId, checklistId);
         return ResponseEntity.noContent().build();

@@ -10,7 +10,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateUserChecklistRequest(
-        @NotNull Long memberId,
         @NotBlank @Size(max = 50) String name,
         @NotNull Stage stage,
         @NotNull @Size(max = 100) List<@NotNull Long> checkItemIds) {

@@ -10,7 +10,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record UpdateUserChecklistRequest(
-        @NotNull Long memberId,
         @NotBlank @Size(max = 50) String name,
         @NotEmpty @Size(max = 100) List<@NotNull Long> checkItemIds) {
 

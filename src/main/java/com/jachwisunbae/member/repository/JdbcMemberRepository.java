@@ -1,6 +1,8 @@
 package com.jachwisunbae.member.repository;
 
 import java.util.Optional;
+import java.sql.Statement;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -34,5 +36,35 @@ public class JdbcMemberRepository implements MemberRepository {
                 """, ROW_MAPPER, id)
                 .stream()
                 .findFirst();
+    }
+
+    @Override
+    public Optional<Member> findBySubject(String subject) {
+        return jdbcTemplate.query("""
+                SELECT id, subject, email, name, last_login_at FROM members WHERE subject = ?
+                """, ROW_MAPPER, subject).stream().findFirst();
+    }
+
+    @Override
+    public Member save(Member member) {
+        if (member.getId() != null) {
+            jdbcTemplate.update("""
+                    UPDATE members SET email = ?, name = ?, last_login_at = ? WHERE id = ?
+                    """, member.getEmail(), member.getName(), member.getLastLoginAt(), member.getId());
+            return member;
+        }
+        GeneratedKeyHolder keys = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            var statement = connection.prepareStatement("""
+                    INSERT INTO members (subject, email, name, last_login_at) VALUES (?, ?, ?, ?)
+                    """, Statement.RETURN_GENERATED_KEYS);
+            statement.setString(1, member.getSubject());
+            statement.setString(2, member.getEmail());
+            statement.setString(3, member.getName());
+            statement.setObject(4, member.getLastLoginAt());
+            return statement;
+        }, keys);
+        return Member.restore(keys.getKey().longValue(), member.getSubject(), member.getEmail(),
+                member.getName(), member.getLastLoginAt());
     }
 }

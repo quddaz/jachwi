@@ -28,6 +28,9 @@ public class DomainErrorHttpMapper {
             case MEMBER_NOT_FOUND,
                     CHECKLIST_NOT_FOUND,
                     CHECKLIST_ITEM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case ACCESS_TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
+            case GOOGLE_AUTHENTICATION_FAILED,
+                    GOOGLE_IDENTITY_INVALID -> HttpStatus.BAD_REQUEST;
         };
     }
 }

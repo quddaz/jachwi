@@ -25,14 +25,14 @@ class UserChecklistControllerTest {
     @Test
     void createReturnsCreatedLocationAndResponse() {
         CreateUserChecklistRequest request = new CreateUserChecklistRequest(
-                1L, "현장 체크", Stage.ON_SITE, List.of(10L));
+                "현장 체크", Stage.ON_SITE, List.of(10L));
         when(service.create(
                 1L,
                 new CreateUserChecklistCommand("현장 체크", Stage.ON_SITE, List.of(10L))))
                 .thenReturn(new UserChecklistDetailResult(
                         100L, "현장 체크", Stage.ON_SITE, List.of()));
 
-        var response = controller.create(request);
+        var response = controller.create(1L, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getHeaders().getLocation()).hasToString("/api/checklists/100");
