@@ -15,13 +15,19 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 public class JwtTokenProvider {
+
     private final byte[] secret;
     private final String issuer;
     private final String audience;
     private final long accessTokenSeconds;
     private final Clock clock;
 
-    public JwtTokenProvider(String secret, String issuer, String audience, long accessTokenSeconds, Clock clock) {
+    public JwtTokenProvider(
+            String secret,
+            String issuer,
+            String audience,
+            long accessTokenSeconds,
+            Clock clock) {
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
         this.issuer = issuer;
         this.audience = audience;
@@ -32,12 +38,7 @@ public class JwtTokenProvider {
     public String createAccessToken(Long memberId) {
         try {
             Instant now = clock.instant();
-            JWTClaimsSet claims = new JWTClaimsSet.Builder().subject(memberId.toString())
-                    .issuer(issuer).audience(audience).issueTime(Date.from(now))
-                    .expirationTime(Date.from(now.plusSeconds(accessTokenSeconds))).build();
-            SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
-            jwt.sign(new MACSigner(secret));
-            return jwt.serialize();
+            return sign(createClaims(memberId, now));
         } catch (Exception exception) {
             throw invalidToken();
         }
@@ -47,10 +48,7 @@ public class JwtTokenProvider {
         try {
             SignedJWT jwt = SignedJWT.parse(token);
             JWTClaimsSet claims = jwt.getJWTClaimsSet();
-            if (!jwt.verify(new MACVerifier(secret))
-                    || !issuer.equals(claims.getIssuer())
-                    || !claims.getAudience().contains(audience)
-                    || !claims.getExpirationTime().toInstant().isAfter(clock.instant())) {
+            if (!isValid(jwt, claims)) {
                 throw invalidToken();
             }
             return Long.valueOf(claims.getSubject());
@@ -59,6 +57,29 @@ public class JwtTokenProvider {
         } catch (Exception exception) {
             throw invalidToken();
         }
+    }
+
+    private JWTClaimsSet createClaims(Long memberId, Instant issuedAt) {
+        return new JWTClaimsSet.Builder()
+                .subject(memberId.toString())
+                .issuer(issuer)
+                .audience(audience)
+                .issueTime(Date.from(issuedAt))
+                .expirationTime(Date.from(issuedAt.plusSeconds(accessTokenSeconds)))
+                .build();
+    }
+
+    private String sign(JWTClaimsSet claims) throws Exception {
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(secret));
+        return jwt.serialize();
+    }
+
+    private boolean isValid(SignedJWT jwt, JWTClaimsSet claims) throws Exception {
+        return jwt.verify(new MACVerifier(secret))
+                && issuer.equals(claims.getIssuer())
+                && claims.getAudience().contains(audience)
+                && claims.getExpirationTime().toInstant().isAfter(clock.instant());
     }
 
     private BusinessException invalidToken() {

@@ -1,4 +1,7 @@
 package com.jachwisunbae.auth.provider;
 
-public record OAuthProfile(String subject, String email, String name) {
+public record OAuthProfile(
+        String subject,
+        String email,
+        String name) {
 }

@@ -1,17 +1,20 @@
 package com.jachwisunbae.auth.config;
 
 import java.time.Clock;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.jachwisunbae.auth.token.JwtTokenProvider;
-import java.util.List;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.auth.web.AuthenticatedMemberIdResolver;
 
 @Configuration
 public class AuthConfig {
+
     @Bean
     WebMvcConfigurer authenticatedMemberIdConfigurer(AuthenticatedMemberIdResolver resolver) {
         return new WebMvcConfigurer() {
@@ -21,6 +24,7 @@ public class AuthConfig {
             }
         };
     }
+
     @Bean
     Clock clock() {
         return Clock.systemUTC();

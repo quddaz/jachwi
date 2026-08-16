@@ -3,12 +3,15 @@ package com.jachwisunbae.auth.provider;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.stereotype.Component;
+
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 
 @Component
 public class OAuthProviderRegistry {
+
     private final Map<OAuthProviderType, OAuthProvider> providers = new EnumMap<>(OAuthProviderType.class);
 
     public OAuthProviderRegistry(List<OAuthProvider> providers) {

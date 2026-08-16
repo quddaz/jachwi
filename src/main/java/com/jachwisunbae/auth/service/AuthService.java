@@ -1,16 +1,19 @@
 package com.jachwisunbae.auth.service;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.jachwisunbae.auth.controller.dto.LoginResponse;
 import com.jachwisunbae.auth.controller.dto.OAuthLoginRequest;
+import com.jachwisunbae.auth.provider.OAuthProfile;
 import com.jachwisunbae.auth.provider.OAuthProviderRegistry;
 import com.jachwisunbae.auth.provider.OAuthProviderType;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -32,14 +35,43 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(OAuthProviderType providerType, OAuthLoginRequest request) {
-        var profile = providerRegistry.get(providerType).authenticate(request.toCommand());
+        OAuthProfile profile = authenticate(providerType, request);
+        Member member = findOrCreateMember(profile);
+        return createLoginResponse(member);
+    }
+
+    private OAuthProfile authenticate(OAuthProviderType providerType, OAuthLoginRequest request) {
+        return providerRegistry.get(providerType).authenticate(request.toCommand());
+    }
+
+    private Member findOrCreateMember(OAuthProfile profile) {
         LocalDateTime now = LocalDateTime.now(clock);
-        Member member = memberRepository.findBySubject(profile.subject()).map(existing -> {
-            existing.updateLoginProfile(profile.email(), profile.name(), now);
-            return memberRepository.save(existing);
-        }).orElseGet(() -> memberRepository.save(Member.create(
-                profile.subject(), profile.email(), profile.name(), now)));
-        return new LoginResponse(jwtProvider.createAccessToken(member.getId()), "Bearer", 3600,
-                new LoginResponse.MemberResponse(member.getId(), member.getName(), member.getEmail()));
+        return memberRepository.findBySubject(profile.subject())
+                .map(member -> updateMember(member, profile, now))
+                .orElseGet(() -> createMember(profile, now));
+    }
+
+    private Member updateMember(Member member, OAuthProfile profile, LocalDateTime loginAt) {
+        member.updateLoginProfile(profile.email(), profile.name(), loginAt);
+        return memberRepository.save(member);
+    }
+
+    private Member createMember(OAuthProfile profile, LocalDateTime loginAt) {
+        return memberRepository.save(Member.create(
+                profile.subject(),
+                profile.email(),
+                profile.name(),
+                loginAt));
+    }
+
+    private LoginResponse createLoginResponse(Member member) {
+        return new LoginResponse(
+                jwtProvider.createAccessToken(member.getId()),
+                "Bearer",
+                3600,
+                new LoginResponse.MemberResponse(
+                        member.getId(),
+                        member.getName(),
+                        member.getEmail()));
     }
 }
