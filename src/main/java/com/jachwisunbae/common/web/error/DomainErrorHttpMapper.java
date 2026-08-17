@@ -25,7 +25,8 @@ public class DomainErrorHttpMapper {
                     CHECKLIST_ITEM_STAGE_MISMATCH,
                     CHECKLIST_CORE_ITEM_REQUIRED,
                     CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
-                    PROPERTY_INPUT_INVALID -> HttpStatus.BAD_REQUEST;
+                    PROPERTY_INPUT_INVALID,
+                    PROPERTY_MEMO_INVALID -> HttpStatus.BAD_REQUEST;
             case MEMBER_NOT_FOUND,
                     CHECKLIST_NOT_FOUND,
                     CHECKLIST_ITEM_NOT_FOUND,
