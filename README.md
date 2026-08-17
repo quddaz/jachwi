@@ -7,7 +7,7 @@
 - Java 21
 - Spring Boot 4.1
 - Spring Web MVC
-- Spring Security / OAuth2 Resource Server
+- Servlet Filter 기반 JWT 인증
 - Spring JDBC
 - MySQL
 - Flyway
@@ -25,19 +25,20 @@
 - [x] 외래 키, UNIQUE, CHECK 제약조건과 조회용 인덱스 구성
 - [x] Testcontainers 기반 Flyway 마이그레이션 테스트
 - [x] 환경변수 기반 데이터베이스 연결 설정
-- [ ] 도메인 기능 및 API 구현
+- [x] 인증·회원·매물·메모·체크리스트 핵심 API 구현
+- [ ] 매물 사진 및 운영 보강 기능 구현
 
 ## 구현 범위
 
 ### 1. 공통 기반
 
-- [ ] 공통 성공 응답 형식 구현
-- [ ] 공통 오류 응답 형식과 필드 검증 오류 구현
-- [ ] 도메인별 오류 코드 정의
-- [ ] 전역 예외 처리기 구현
-- [ ] Access Token에서 현재 회원을 식별하는 인증 컨텍스트 구현
-- [ ] 다른 회원의 자원 접근 시 `404 Not Found`로 응답하도록 소유권 검증 구현
-- [ ] 페이지 번호와 크기 검증 및 공통 페이지 응답 구현
+- [x] 공통 성공 응답 형식 구현
+- [x] 공통 오류 응답 형식 구현
+- [x] 도메인별 오류 코드 정의
+- [x] 전역 예외 처리기 구현
+- [x] Access Token에서 현재 회원을 식별하는 인증 컨텍스트 구현
+- [x] 다른 회원의 자원 접근 시 `404 Not Found`로 응답하도록 소유권 검증 구현
+- [x] 페이지 번호와 크기 검증 및 공통 페이지 응답 구현
 - [ ] UTC 기반 날짜·시간 직렬화 설정
 - [ ] 요청 ID, API 경로, 상태 코드, 처리 시간을 남기는 구조화 로그 구현
 - [ ] 토큰, Google 인증 정보, 메모 원문, 사진 저장 키 등 민감정보 로그 차단
@@ -45,53 +46,53 @@
 
 ### 2. 회원 및 인증
 
-- [ ] Google Authorization Code + PKCE 로그인 구현
-- [ ] Google ID Token의 서명, issuer, audience, nonce 검증
-- [ ] Google `subject`를 기준으로 최초 로그인 시 회원 자동 생성
-- [ ] 기존 회원 재로그인 시 이름, 이메일, 마지막 로그인 시각 갱신
-- [ ] Access Token 발급 구현
-- [ ] 회전 가능한 Refresh Token 발급 구현
-- [ ] Refresh Token 원문 대신 SHA-256 해시만 저장
-- [ ] Refresh Token 만료·폐기·재사용 검증
-- [ ] 토큰 재발급 시 기존 Refresh Token 폐기 및 신규 토큰 생성
-- [ ] 현재 기기의 Refresh Token을 폐기하는 로그아웃 구현
-- [ ] 현재 로그인 회원 정보 조회 구현
-- [ ] 공개 API와 인증 필요 API에 대한 SecurityFilterChain 설정
+- [x] Google Authorization Code + PKCE 로그인 구현
+- [x] Google ID Token의 서명, issuer, audience, nonce 검증
+- [x] Google `subject`를 기준으로 최초 로그인 시 회원 자동 생성
+- [x] 기존 회원 재로그인 시 이름, 이메일, 마지막 로그인 시각 갱신
+- [x] Access Token 발급 구현
+- [x] 회전 가능한 Refresh Token 발급 구현
+- [x] Refresh Token 원문 대신 SHA-256 해시만 저장
+- [x] Refresh Token 만료·폐기·재사용 검증
+- [x] 토큰 재발급 시 기존 Refresh Token 폐기 및 신규 토큰 생성
+- [x] 현재 기기의 Refresh Token을 폐기하는 로그아웃 구현
+- [x] 현재 로그인 회원 정보 조회 구현
+- [x] Servlet Filter 기반 공개·보호 API 인증 경계 설정
 
 구현 API:
 
-- [ ] `POST /api/auth/google`
-- [ ] `POST /api/auth/tokens`
-- [ ] `POST /api/auth/logout`
-- [ ] `GET /api/members/me`
+- [x] `POST /api/auth/google`
+- [x] `POST /api/auth/tokens`
+- [x] `POST /api/auth/logout`
+- [x] `GET /api/members/me`
 
 ### 3. 후보 매물
 
-- [ ] 매물 생성 구현
-- [ ] 회원당 최대 50개 제한 구현
-- [ ] 이름 trim 및 1~50자 검증
-- [ ] 보증금·월세·관리비의 `null`과 0원 구분
-- [ ] 금액이 0 이상의 정수인지 검증
-- [ ] 주소와 발견 경로의 최대 500자 검증
-- [ ] 매물 이름 부분 일치 검색 구현
-- [ ] 회원 소유 매물만 조회되도록 쿼리 구현
-- [ ] `lastActivityAt DESC, propertyId DESC` 정렬 구현
-- [ ] 기본 20개, 최대 50개의 페이지네이션 구현
+- [x] 매물 생성 구현
+- [x] 회원당 최대 50개 제한 구현
+- [x] 이름 trim 및 1~50자 검증
+- [x] 보증금·월세·관리비의 `null`과 0원 구분
+- [x] 금액이 0 이상의 정수인지 검증
+- [x] 주소와 발견 경로의 최대 500자 검증
+- [x] 매물 이름 부분 일치 검색 구현
+- [x] 회원 소유 매물만 조회되도록 쿼리 구현
+- [x] `lastActivityAt DESC, propertyId DESC` 정렬 구현
+- [x] 기본 20개, 최대 50개의 페이지네이션 구현
 - [ ] 첫 번째 사진 미리보기와 전체 체크 진행 현황을 포함한 목록 조회 구현
 - [ ] 사진 수, 메모, 단계별 체크 요약과 삭제 영향을 포함한 상세 조회 구현
-- [ ] 전달된 필드만 변경하는 부분 수정 구현
-- [ ] 선택 필드에 전달된 명시적 `null` 처리 구현
+- [x] 전달된 필드만 변경하는 부분 수정 구현
+- [x] 선택 필드에 전달된 명시적 `null` 처리 구현
 - [ ] 매물 삭제 전 외부 사진 객체 삭제 확인
-- [ ] 매물 삭제 시 사진 메타데이터·메모·체크 기록 연쇄 삭제
-- [ ] 매물 변경 시 `last_activity_at` 갱신 정책 구현
+- [x] 매물 삭제 시 사진 메타데이터·메모·체크 기록 연쇄 삭제
+- [x] 매물 변경 시 `last_activity_at` 갱신 정책 구현
 
 구현 API:
 
-- [ ] `POST /api/properties`
-- [ ] `GET /api/properties`
-- [ ] `GET /api/properties/{propertyId}`
-- [ ] `PATCH /api/properties/{propertyId}`
-- [ ] `DELETE /api/properties/{propertyId}`
+- [x] `POST /api/properties`
+- [x] `GET /api/properties`
+- [x] `GET /api/properties/{propertyId}`
+- [x] `PATCH /api/properties/{propertyId}`
+- [x] `DELETE /api/properties/{propertyId}`
 
 > `detailAddress`와 `properties.detail_address`는 현재 범위에 포함하지 않습니다.
 
@@ -122,21 +123,21 @@
 
 ### 5. 매물 메모
 
-- [ ] 매물별 메모 루트 조회 구현
-- [ ] 동적 구조화 메모와 자유 메모 동시 조회 구현
-- [ ] 구조화 메모 최대 20개 검증
-- [ ] 항목명 trim 및 1~30자 검증
-- [ ] 항목 내용 최대 200자 검증
-- [ ] 자유 메모 최대 2,000자 검증
-- [ ] 요청 배열 순서를 1부터 시작하는 `display_order`로 저장
-- [ ] 기존 구조화 메모를 요청 상태로 전체 교체
-- [ ] 구조화 메모와 자유 메모 전체 저장을 하나의 트랜잭션으로 처리
-- [ ] 저장 실패 시 마지막 정상 저장 상태 유지
+- [x] 매물별 메모 루트 조회 구현
+- [x] 동적 구조화 메모와 자유 메모 동시 조회 구현
+- [x] 구조화 메모 최대 20개 검증
+- [x] 항목명 trim 및 1~30자 검증
+- [x] 항목 내용 최대 200자 검증
+- [x] 자유 메모 최대 2,000자 검증
+- [x] 요청 배열 순서를 1부터 시작하는 `display_order`로 저장
+- [x] 기존 구조화 메모를 요청 상태로 전체 교체
+- [x] 구조화 메모와 자유 메모 전체 저장을 하나의 트랜잭션으로 처리
+- [x] 저장 실패 시 마지막 정상 저장 상태 유지
 
 구현 API:
 
-- [ ] `GET /api/properties/{propertyId}/memo`
-- [ ] `PUT /api/properties/{propertyId}/memo`
+- [x] `GET /api/properties/{propertyId}/memo`
+- [x] `PUT /api/properties/{propertyId}/memo`
 
 ### 6. 시스템 체크 항목
 
@@ -185,62 +186,62 @@
 
 ### 8. 매물 체크리스트 적용 및 교체
 
-- [ ] 매물의 단계별 체크리스트 적용 현황 조회 구현
-- [ ] 한 매물의 같은 단계에 체크리스트를 최대 하나만 적용
-- [ ] 적용 시 체크리스트 이름, 단계, 시스템 항목 ID, 질문, 안내, 순서를 스냅샷으로 복사
-- [ ] 신규 스냅샷 항목을 `UNCONFIRMED`와 빈 메모로 생성
-- [ ] 원본 체크리스트 수정이 기존 매물 스냅샷에 반영되지 않도록 처리
-- [ ] 같은 단계의 다른 체크리스트로 교체 구현
-- [ ] 시스템 항목 ID가 같은 항목의 상태와 메모 승계
-- [ ] 질문 문구만 같은 서로 다른 시스템 항목은 별개로 처리
-- [ ] 교체 후 모든 매물 체크 항목에 새 ID 발급
-- [ ] 새 체크리스트에만 있는 항목을 기본 상태로 추가
-- [ ] 새 체크리스트에 없는 기존 항목과 결과 삭제
-- [ ] 체크리스트 교체 전체를 하나의 트랜잭션으로 처리
-- [ ] 교체 실패 시 기존 체크 기록 전체 유지
+- [x] 매물의 단계별 체크리스트 적용 현황 조회 구현
+- [x] 한 매물의 같은 단계에 체크리스트를 최대 하나만 적용
+- [x] 적용 시 체크리스트 이름, 단계, 시스템 항목 ID, 질문, 안내, 순서를 스냅샷으로 복사
+- [x] 신규 스냅샷 항목을 `UNCONFIRMED`와 빈 메모로 생성
+- [x] 원본 체크리스트 수정이 기존 매물 스냅샷에 반영되지 않도록 처리
+- [x] 같은 단계의 다른 체크리스트로 교체 구현
+- [x] 시스템 항목 ID가 같은 항목의 상태와 메모 승계
+- [x] 질문 문구만 같은 서로 다른 시스템 항목은 별개로 처리
+- [x] 교체 후 모든 매물 체크 항목에 새 ID 발급
+- [x] 새 체크리스트에만 있는 항목을 기본 상태로 추가
+- [x] 새 체크리스트에 없는 기존 항목과 결과 삭제
+- [x] 체크리스트 교체 전체를 하나의 트랜잭션으로 처리
+- [x] 교체 실패 시 기존 체크 기록 전체 유지
 
 구현 API:
 
-- [ ] `GET /api/properties/{propertyId}/checklists`
-- [ ] `PUT /api/properties/{propertyId}/checklists/{stage}`
-- [ ] `GET /api/properties/{propertyId}/checklists/{propertyChecklistId}`
+- [x] `GET /api/properties/{propertyId}/checklists`
+- [x] `PUT /api/properties/{propertyId}/checklists/{stage}`
+- [x] `GET /api/properties/{propertyId}/checklists/{propertyChecklistId}`
 
 ### 9. 체크 상태와 항목 메모 자동 저장
 
-- [ ] 체크 상태 열거형 구현: `UNCONFIRMED`, `GOOD`, `CAUTION`
-- [ ] 상태만 변경하는 저장 쿼리 구현
-- [ ] 메모만 변경하는 저장 쿼리 구현
-- [ ] 상태 저장 시 메모가 변경되지 않도록 보장
-- [ ] 메모 저장 시 상태가 변경되지 않도록 보장
-- [ ] 항목 메모 최대 500자 검증
-- [ ] 빈 문자열을 이용한 항목 메모 전체 삭제 지원
-- [ ] 교체 전 항목 ID로 들어온 자동 저장 요청을 `404`로 무효화
-- [ ] 저장 실패 시 클라이언트가 미반영 입력을 유지할 수 있는 오류 응답 제공
+- [x] 체크 상태 열거형 구현: `UNCONFIRMED`, `GOOD`, `CAUTION`
+- [x] 상태만 변경하는 저장 쿼리 구현
+- [x] 메모만 변경하는 저장 쿼리 구현
+- [x] 상태 저장 시 메모가 변경되지 않도록 보장
+- [x] 메모 저장 시 상태가 변경되지 않도록 보장
+- [x] 항목 메모 최대 500자 검증
+- [x] 빈 문자열을 이용한 항목 메모 전체 삭제 지원
+- [x] 교체 전 항목 ID로 들어온 자동 저장 요청을 `404`로 무효화
+- [x] 저장 실패 시 클라이언트가 미반영 입력을 유지할 수 있는 오류 응답 제공
 
 구현 API:
 
-- [ ] `PATCH /api/properties/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/status`
-- [ ] `PATCH /api/properties/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/memo`
+- [x] `PATCH /api/properties/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/status`
+- [x] `PATCH /api/properties/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/memo`
 
 ### 10. 진행 현황
 
-- [ ] `GOOD`과 `CAUTION`을 확인 완료로 집계
-- [ ] `UNCONFIRMED`를 미확인으로 집계
-- [ ] 단계별 전체·완료·괜찮음·주의·미확인 개수 계산
-- [ ] 매물 전체 단계의 진행 현황 계산
-- [ ] `완료 개수 / 전체 개수 * 100` 정수 진행률 계산
-- [ ] 전체 항목이 없을 때 진행률 0 반환
-- [ ] 목록 조회에서 N+1 없이 진행 현황 집계
+- [x] `GOOD`과 `CAUTION`을 확인 완료로 집계
+- [x] `UNCONFIRMED`를 미확인으로 집계
+- [x] 단계별 전체·완료·괜찮음·주의·미확인 개수 계산
+- [x] 매물 전체 단계의 진행 현황 계산
+- [x] `완료 개수 / 전체 개수 * 100` 정수 진행률 계산
+- [x] 전체 항목이 없을 때 진행률 0 반환
+- [x] 목록 조회에서 N+1 없이 진행 현황 집계
 
 ## 트랜잭션 경계
 
 다음 작업은 반드시 하나의 트랜잭션으로 처리해야 합니다.
 
-- [ ] 매물 메모 전체 교체
+- [x] 매물 메모 전체 교체
 - [ ] 사용자 체크리스트 생성·수정·삭제
-- [ ] 체크리스트의 매물 최초 적용
-- [ ] 적용 체크리스트 교체와 결과 승계
-- [ ] 사진 객체 처리를 제외한 매물 종속 DB 데이터 삭제
+- [x] 체크리스트의 매물 최초 적용
+- [x] 적용 체크리스트 교체와 결과 승계
+- [x] 사진 객체 처리를 제외한 매물 종속 DB 데이터 삭제
 
 사진 업로드·삭제는 S3와 DB를 하나의 ACID 트랜잭션으로 묶을 수 없으므로 보상 작업을 사용해야 합니다.
 
