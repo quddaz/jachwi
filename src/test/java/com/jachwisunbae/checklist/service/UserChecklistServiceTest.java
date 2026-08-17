@@ -83,7 +83,7 @@ class UserChecklistServiceTest {
     }
 
     @Test
-    void updateReplacesNameAndItemOrderInOneTransaction() {
+    void updateAllowsRemovingAutomaticallyIncludedCoreItem() {
         UserChecklistDetailResult created = service.create(
                 memberId,
                 new CreateUserChecklistCommand(
@@ -93,12 +93,12 @@ class UserChecklistServiceTest {
                 memberId,
                 created.checklistId(),
                 new UpdateUserChecklistCommand(
-                        "변경 체크", List.of(optionalItemId, coreItemId)));
+                        "변경 체크", List.of(optionalItemId)));
 
         assertThat(updated.name()).isEqualTo("변경 체크");
         assertThat(updated.items())
                 .extracting(item -> item.checkItemId())
-                .containsExactly(optionalItemId, coreItemId);
+                .containsExactly(optionalItemId);
     }
 
     @Test

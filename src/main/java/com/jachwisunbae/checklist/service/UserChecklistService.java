@@ -75,7 +75,7 @@ public class UserChecklistService {
             Long memberId,
             Long checklistId,
             UpdateUserChecklistCommand command) {
-        // 체크리스트를 잠근 뒤 기존 비활성 항목의 유지 여부와 필수 CORE 포함 여부를 검증한다.
+        // 체크리스트를 잠근 뒤 기존 비활성 항목의 유지 여부와 항목 구성을 검증한다.
         // 검증을 통과하면 이름과 전체 항목 순서를 한 트랜잭션으로 교체한다.
         UserChecklist checklist = getOwnedChecklistForUpdate(memberId, checklistId);
         List<Long> itemIds = validateUpdateItems(checklist, command.checkItemIds());
@@ -123,10 +123,6 @@ public class UserChecklistService {
                 .collect(Collectors.toSet());
         List<Long> requestedIds = validator.validateItemIds(requestedItemIds, false);
         validator.validateItems(checklist.getStage(), findRequestedItems(requestedIds), existingIds);
-        policy.validateRequiredCoreItems(
-                systemItemRepository.findAllByIds(List.copyOf(existingIds)),
-                systemItemRepository.findActiveCoreByStage(checklist.getStage()),
-                requestedIds);
         validator.validateFinalItemCount(requestedIds);
         return requestedIds;
     }
