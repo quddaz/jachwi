@@ -116,7 +116,9 @@ public class PropertyService {
     }
 
     private PropertyResult toResult(PropertyRow row) {
-        return PropertyResult.from(row.property(), row.totalCount(), row.completedCount());
+        return PropertyResult.from(
+                row.property(), row.totalCount(), row.completedCount(), row.goodCount(),
+                row.cautionCount(), row.unconfirmedCount());
     }
 
     private BusinessException notFound() {

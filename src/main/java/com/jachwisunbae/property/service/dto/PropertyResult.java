@@ -17,12 +17,19 @@ public record PropertyResult(
         LocalDateTime updatedAt,
         CheckProgressResult progress) {
 
-    public static PropertyResult from(Property property, long totalCount, long completedCount) {
+    public static PropertyResult from(
+            Property property,
+            long totalCount,
+            long completedCount,
+            long goodCount,
+            long cautionCount,
+            long unconfirmedCount) {
         return new PropertyResult(
                 property.getId(), property.getName(), property.getDepositAmount(),
                 property.getMonthlyRentAmount(), property.getMaintenanceFeeAmount(),
                 property.getAddress(), property.getDiscoverySource(), property.getLastActivityAt(),
                 property.getCreatedAt(), property.getUpdatedAt(),
-                CheckProgressResult.of(totalCount, completedCount));
+                CheckProgressResult.of(
+                        totalCount, completedCount, goodCount, cautionCount, unconfirmedCount));
     }
 }

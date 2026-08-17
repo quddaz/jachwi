@@ -24,9 +24,17 @@ public record PropertyResponse(
                 result.discoverySource(), result.lastActivityAt(), result.createdAt(),
                 result.updatedAt(), new ProgressResponse(
                         result.progress().totalCount(), result.progress().completedCount(),
+                        result.progress().goodCount(), result.progress().cautionCount(),
+                        result.progress().unconfirmedCount(),
                         result.progress().progressPercent()));
     }
 
-    public record ProgressResponse(long totalCount, long completedCount, int progressPercent) {
+    public record ProgressResponse(
+            long totalCount,
+            long completedCount,
+            long goodCount,
+            long cautionCount,
+            long unconfirmedCount,
+            int progressPercent) {
     }
 }

@@ -26,11 +26,15 @@ public class DomainErrorHttpMapper {
                     CHECKLIST_CORE_ITEM_REQUIRED,
                     CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                     PROPERTY_INPUT_INVALID,
-                    PROPERTY_MEMO_INVALID -> HttpStatus.BAD_REQUEST;
+                    PROPERTY_MEMO_INVALID,
+                    PROPERTY_CHECKLIST_STAGE_MISMATCH,
+                    PROPERTY_CHECK_RESULT_INVALID -> HttpStatus.BAD_REQUEST;
             case MEMBER_NOT_FOUND,
                     CHECKLIST_NOT_FOUND,
                     CHECKLIST_ITEM_NOT_FOUND,
-                    PROPERTY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    PROPERTY_NOT_FOUND,
+                    PROPERTY_CHECKLIST_NOT_FOUND,
+                    PROPERTY_CHECKLIST_ITEM_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCESS_TOKEN_INVALID,
                     REFRESH_TOKEN_INVALID,
                     REFRESH_TOKEN_EXPIRED -> HttpStatus.UNAUTHORIZED;

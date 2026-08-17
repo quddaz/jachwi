@@ -30,7 +30,10 @@ public class JdbcPropertyRepository implements PropertyRepository {
                             resultSet.getTimestamp("created_at").toLocalDateTime(),
                             resultSet.getTimestamp("updated_at").toLocalDateTime()),
                     resultSet.getLong("total_count"),
-                    resultSet.getLong("completed_count"));
+                    resultSet.getLong("completed_count"),
+                    resultSet.getLong("good_count"),
+                    resultSet.getLong("caution_count"),
+                    resultSet.getLong("unconfirmed_count"));
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -97,7 +100,13 @@ public class JdbcPropertyRepository implements PropertyRepository {
                        p.last_activity_at, p.created_at, p.updated_at,
                        COUNT(pci.id) AS total_count,
                        COALESCE(SUM(CASE WHEN pci.status IN ('GOOD', 'CAUTION') THEN 1 ELSE 0 END), 0)
-                           AS completed_count
+                           AS completed_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'GOOD' THEN 1 ELSE 0 END), 0)
+                           AS good_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'CAUTION' THEN 1 ELSE 0 END), 0)
+                           AS caution_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'UNCONFIRMED' THEN 1 ELSE 0 END), 0)
+                           AS unconfirmed_count
                 FROM properties p
                 LEFT JOIN property_checklists pc ON pc.property_id = p.id
                 LEFT JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id
@@ -116,7 +125,13 @@ public class JdbcPropertyRepository implements PropertyRepository {
                        p.last_activity_at, p.created_at, p.updated_at,
                        COUNT(pci.id) AS total_count,
                        COALESCE(SUM(CASE WHEN pci.status IN ('GOOD', 'CAUTION') THEN 1 ELSE 0 END), 0)
-                           AS completed_count
+                           AS completed_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'GOOD' THEN 1 ELSE 0 END), 0)
+                           AS good_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'CAUTION' THEN 1 ELSE 0 END), 0)
+                           AS caution_count,
+                       COALESCE(SUM(CASE WHEN pci.status = 'UNCONFIRMED' THEN 1 ELSE 0 END), 0)
+                           AS unconfirmed_count
                 FROM properties p
                 LEFT JOIN property_checklists pc ON pc.property_id = p.id
                 LEFT JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id

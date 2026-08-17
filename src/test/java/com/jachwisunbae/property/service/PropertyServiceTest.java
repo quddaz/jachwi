@@ -100,6 +100,47 @@ class PropertyServiceTest {
                                 .isEqualTo(DomainErrorCode.PROPERTY_LIMIT_EXCEEDED));
     }
 
+    @Test
+    void aggregatesOverallStatusCountsWithoutAdditionalItemQueries() {
+        Long propertyId = insertProperty(
+                memberId, "진행 매물", LocalDateTime.of(2026, 8, 17, 0, 0));
+        jdbcTemplate.update("""
+                INSERT INTO property_checklists (
+                    property_id, checklist_name_snapshot, stage
+                ) VALUES (?, '현장', 'ON_SITE')
+                """, propertyId);
+        Long propertyChecklistId = jdbcTemplate.queryForObject(
+                "SELECT id FROM property_checklists WHERE property_id = ?",
+                Long.class,
+                propertyId);
+        jdbcTemplate.update("""
+                INSERT INTO system_check_items (stage, item_type, question)
+                VALUES ('ON_SITE', 'OPTIONAL', '집계1'),
+                       ('ON_SITE', 'OPTIONAL', '집계2'),
+                       ('ON_SITE', 'OPTIONAL', '집계3')
+                """);
+        var ids = jdbcTemplate.queryForList(
+                "SELECT id FROM system_check_items WHERE question LIKE '집계%' ORDER BY id",
+                Long.class);
+        String[] statuses = {"GOOD", "CAUTION", "UNCONFIRMED"};
+        for (int index = 0; index < ids.size(); index++) {
+            jdbcTemplate.update("""
+                    INSERT INTO property_checklist_items (
+                        property_checklist_id, source_system_check_item_id,
+                        question_snapshot, display_order, status
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """, propertyChecklistId, ids.get(index), "집계" + index, index + 1,
+                    statuses[index]);
+        }
+
+        var progress = service.findOne(memberId, propertyId).progress();
+
+        assertThat(progress.goodCount()).isOne();
+        assertThat(progress.cautionCount()).isOne();
+        assertThat(progress.unconfirmedCount()).isOne();
+        assertThat(progress.progressPercent()).isEqualTo(66);
+    }
+
     private Long insertMember(String subject) {
         jdbcTemplate.update("""
                 INSERT INTO members (subject, email, name, last_login_at)
