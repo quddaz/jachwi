@@ -21,6 +21,7 @@ import com.jachwisunbae.property.service.policy.PropertyPolicy;
 import com.jachwisunbae.property.service.validation.PropertyValidator;
 
 @Service
+@Transactional(readOnly = true)
 public class PropertyService {
 
     private final PropertyRepository repository;
@@ -41,6 +42,7 @@ public class PropertyService {
 
     @Transactional
     public PropertyResult create(Long memberId, CreatePropertyCommand command) {
+        // 회원 행을 먼저 잠가 동시 생성 요청에서도 회원당 50개 제한을 원자적으로 보장한다.
         String normalizedName = validator.validate(command);
         lockMember(memberId);
         policy.validateCreationAllowed(repository.countByMemberId(memberId));
@@ -57,7 +59,6 @@ public class PropertyService {
         return findOwned(saved.getId(), memberId);
     }
 
-    @Transactional(readOnly = true)
     public PropertyPageResult findAll(Long memberId, String query, int page, int size) {
         validator.validatePage(page, size);
         String normalizedQuery = validator.normalizeQuery(query);
@@ -70,7 +71,6 @@ public class PropertyService {
         return PropertyPageResult.of(content, page, size, totalElements);
     }
 
-    @Transactional(readOnly = true)
     public PropertyResult findOne(Long memberId, Long propertyId) {
         return findOwned(propertyId, memberId);
     }

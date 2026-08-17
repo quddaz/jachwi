@@ -12,6 +12,7 @@ import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.service.dto.MemberResult;
 
 @Service
+@Transactional(readOnly = true)
 public class MemberService {
 
     private final MemberRepository repository;
@@ -20,7 +21,6 @@ public class MemberService {
         this.repository = repository;
     }
 
-    @Transactional(readOnly = true)
     public MemberResult getMe(Long memberId) {
         Optional<Member> member = repository.findById(memberId);
         if (member.isEmpty()) {

@@ -32,6 +32,7 @@ import com.jachwisunbae.property.checklist.type.CheckStatus;
 import com.jachwisunbae.property.repository.PropertyRepository;
 
 @Service
+@Transactional(readOnly = true)
 public class AppliedChecklistService {
 
     private final AppliedChecklistRepository repository;
@@ -62,6 +63,8 @@ public class AppliedChecklistService {
             Long propertyId,
             Stage stage,
             Long sourceChecklistId) {
+        // 원본과 기존 적용 기록을 잠근 뒤 질문·안내·순서를 새 스냅샷으로 만든다.
+        // 같은 시스템 항목의 상태·메모만 승계하고 전체 항목을 새 ID로 교체해 오래된 저장 요청을 무효화한다.
         validatePropertyOwnership(memberId, propertyId);
         UserChecklist source = findSourceChecklist(memberId, sourceChecklistId);
         validator.validateStage(stage, source.getStage());
@@ -79,7 +82,6 @@ public class AppliedChecklistService {
         return findOne(memberId, propertyId, checklist.getId());
     }
 
-    @Transactional(readOnly = true)
     public List<AppliedChecklistSummaryResult> findAll(Long memberId, Long propertyId) {
         validatePropertyOwnership(memberId, propertyId);
         Map<Stage, AppliedChecklist> byStage = mapChecklistsByStage(
@@ -112,7 +114,6 @@ public class AppliedChecklistService {
         return byStage;
     }
 
-    @Transactional(readOnly = true)
     public AppliedChecklistDetailResult findOne(
             Long memberId,
             Long propertyId,

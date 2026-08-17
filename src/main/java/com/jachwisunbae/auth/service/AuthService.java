@@ -26,6 +26,7 @@ import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 
 @Service
+@Transactional(readOnly = true)
 public class AuthService {
 
     private final OAuthProviderRegistry providerRegistry;
@@ -61,6 +62,8 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(OAuthProviderType providerType, OAuthLoginRequest request) {
+        // 공급자 인증을 먼저 완료한 뒤 subject 기준으로 회원을 생성하거나 로그인 정보를 갱신한다.
+        // 회원 저장과 Refresh Token 발급은 같은 트랜잭션에서 처리해 불완전한 로그인을 남기지 않는다.
         OAuthProfile profile = authenticate(providerType, request);
         Member member = findOrCreateMember(profile);
         return createLoginResponse(member);
@@ -68,6 +71,8 @@ public class AuthService {
 
     @Transactional(noRollbackFor = BusinessException.class)
     public TokenResponse rotate(String rawRefreshToken) {
+        // 토큰 행을 잠금 조회해 동시 회전을 직렬화하고, 기존 토큰 폐기 후 새 토큰 쌍을 발급한다.
+        // 폐기 토큰 재사용 시 발생하는 BusinessException은 롤백하지 않아 전체 활성 토큰 폐기를 유지한다.
         LocalDateTime now = LocalDateTime.now(clock);
         RefreshToken current = findRefreshToken(rawRefreshToken);
         validateRotatable(current, now);

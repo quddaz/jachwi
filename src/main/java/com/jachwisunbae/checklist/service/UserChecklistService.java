@@ -50,6 +50,7 @@ public class UserChecklistService {
 
     @Transactional
     public UserChecklistDetailResult create(Long memberId, CreateUserChecklistCommand command) {
+        // 요청 항목을 검증한 뒤 같은 단계의 활성 CORE를 자동 포함하고 최종 표시 순서로 저장한다.
         validateMember(memberId);
         List<Long> itemIds = resolveCreateItemIds(command);
         UserChecklist checklist = saveChecklist(memberId, command, itemIds);
@@ -74,6 +75,8 @@ public class UserChecklistService {
             Long memberId,
             Long checklistId,
             UpdateUserChecklistCommand command) {
+        // 체크리스트를 잠근 뒤 기존 비활성 항목의 유지 여부와 필수 CORE 포함 여부를 검증한다.
+        // 검증을 통과하면 이름과 전체 항목 순서를 한 트랜잭션으로 교체한다.
         UserChecklist checklist = getOwnedChecklistForUpdate(memberId, checklistId);
         List<Long> itemIds = validateUpdateItems(checklist, command.checkItemIds());
         checklist.rename(command.name());

@@ -20,6 +20,7 @@ import com.jachwisunbae.property.memo.service.validation.PropertyMemoValidator;
 import com.jachwisunbae.property.repository.PropertyRepository;
 
 @Service
+@Transactional(readOnly = true)
 public class PropertyMemoService {
 
     private final PropertyMemoRepository memoRepository;
@@ -38,7 +39,6 @@ public class PropertyMemoService {
         this.clock = clock;
     }
 
-    @Transactional(readOnly = true)
     public PropertyMemoResult get(Long memberId, Long propertyId) {
         validateOwnership(memberId, propertyId);
         Optional<PropertyMemoSnapshot> snapshot = memoRepository.findByPropertyId(propertyId);
@@ -53,6 +53,8 @@ public class PropertyMemoService {
             Long memberId,
             Long propertyId,
             ReplacePropertyMemoCommand command) {
+        // 자유 메모 루트를 저장한 뒤 구조화 항목을 요청 배열로 전체 교체한다.
+        // 소유권 확인부터 활동 시각 갱신까지 한 트랜잭션으로 묶어 부분 저장을 방지한다.
         validateOwnership(memberId, propertyId);
         ReplacePropertyMemoCommand validated = validator.validate(command);
         Long memoId = memoRepository.saveRoot(propertyId, validated.freeMemo());
