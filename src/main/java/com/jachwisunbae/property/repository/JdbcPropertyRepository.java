@@ -1,39 +1,21 @@
 package com.jachwisunbae.property.repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
 import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.repository.projection.PropertyWithProgress;
 
 @Repository
 public class JdbcPropertyRepository implements PropertyRepository {
-
-    private static final RowMapper<PropertyRow> ROW_MAPPER = (resultSet, rowNumber) ->
-            new PropertyRow(
-                    Property.restore(
-                            resultSet.getLong("id"),
-                            resultSet.getLong("member_id"),
-                            resultSet.getString("name"),
-                            resultSet.getObject("deposit_amount", Long.class),
-                            resultSet.getObject("monthly_rent_amount", Long.class),
-                            resultSet.getObject("maintenance_fee_amount", Long.class),
-                            resultSet.getString("address"),
-                            resultSet.getString("discovery_source"),
-                            resultSet.getTimestamp("last_activity_at").toLocalDateTime(),
-                            resultSet.getTimestamp("created_at").toLocalDateTime(),
-                            resultSet.getTimestamp("updated_at").toLocalDateTime()),
-                    resultSet.getLong("total_count"),
-                    resultSet.getLong("completed_count"),
-                    resultSet.getLong("good_count"),
-                    resultSet.getLong("caution_count"),
-                    resultSet.getLong("unconfirmed_count"));
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -89,7 +71,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
     }
 
     @Override
-    public List<PropertyRow> findPageByMemberId(
+    public List<PropertyWithProgress> findPageByMemberId(
             Long memberId,
             String query,
             int size,
@@ -114,12 +96,12 @@ public class JdbcPropertyRepository implements PropertyRepository {
                 GROUP BY p.id
                 ORDER BY p.last_activity_at DESC, p.id DESC
                 LIMIT ? OFFSET ?
-                """, ROW_MAPPER, memberId, query, size, offset);
+                """, this::mapPropertyRow, memberId, query, size, offset);
     }
 
     @Override
-    public Optional<PropertyRow> findByIdAndMemberId(Long propertyId, Long memberId) {
-        return jdbcTemplate.query("""
+    public Optional<PropertyWithProgress> findByIdAndMemberId(Long propertyId, Long memberId) {
+        List<PropertyWithProgress> rows = jdbcTemplate.query("""
                 SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
                        p.maintenance_fee_amount, p.address, p.discovery_source,
                        p.last_activity_at, p.created_at, p.updated_at,
@@ -137,7 +119,11 @@ public class JdbcPropertyRepository implements PropertyRepository {
                 LEFT JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id
                 WHERE p.id = ? AND p.member_id = ?
                 GROUP BY p.id
-                """, ROW_MAPPER, propertyId, memberId).stream().findFirst();
+                """, this::mapPropertyRow, propertyId, memberId);
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(rows.getFirst());
     }
 
     @Override
@@ -166,5 +152,28 @@ public class JdbcPropertyRepository implements PropertyRepository {
                 UPDATE properties SET last_activity_at = ?
                 WHERE id = ? AND member_id = ?
                 """, activityAt, propertyId, memberId);
+    }
+
+    private PropertyWithProgress mapPropertyRow(ResultSet resultSet, int rowNumber)
+            throws SQLException {
+        Property property = Property.restore(
+                resultSet.getLong("id"),
+                resultSet.getLong("member_id"),
+                resultSet.getString("name"),
+                resultSet.getObject("deposit_amount", Long.class),
+                resultSet.getObject("monthly_rent_amount", Long.class),
+                resultSet.getObject("maintenance_fee_amount", Long.class),
+                resultSet.getString("address"),
+                resultSet.getString("discovery_source"),
+                resultSet.getTimestamp("last_activity_at").toLocalDateTime(),
+                resultSet.getTimestamp("created_at").toLocalDateTime(),
+                resultSet.getTimestamp("updated_at").toLocalDateTime());
+        return new PropertyWithProgress(
+                property,
+                resultSet.getLong("total_count"),
+                resultSet.getLong("completed_count"),
+                resultSet.getLong("good_count"),
+                resultSet.getLong("caution_count"),
+                resultSet.getLong("unconfirmed_count"));
     }
 }

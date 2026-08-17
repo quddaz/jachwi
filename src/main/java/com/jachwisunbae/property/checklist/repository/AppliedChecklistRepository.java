@@ -4,30 +4,31 @@ import java.util.List;
 import java.util.Optional;
 
 import com.jachwisunbae.checklist.type.Stage;
-import com.jachwisunbae.property.checklist.entity.PropertyChecklist;
-import com.jachwisunbae.property.checklist.entity.PropertyChecklistItem;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklist;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklistItem;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklistItemDraft;
 import com.jachwisunbae.property.checklist.type.CheckStatus;
 
-public interface PropertyChecklistRepository {
+public interface AppliedChecklistRepository {
 
-    Optional<PropertyChecklist> findByPropertyAndStageForUpdate(Long propertyId, Stage stage);
+    Optional<AppliedChecklist> findByPropertyAndStageForUpdate(Long propertyId, Stage stage);
 
-    Optional<PropertyChecklist> findOwnedById(
+    Optional<AppliedChecklist> findOwnedById(
             Long memberId,
             Long propertyId,
             Long propertyChecklistId);
 
-    List<PropertyChecklist> findAllOwned(Long memberId, Long propertyId);
+    List<AppliedChecklist> findAllOwned(Long memberId, Long propertyId);
 
-    List<PropertyChecklistItem> findItems(Long propertyChecklistId);
+    List<AppliedChecklistItem> findItems(Long propertyChecklistId);
 
-    PropertyChecklist save(PropertyChecklist checklist);
+    AppliedChecklist save(AppliedChecklist checklist);
 
     void deleteItems(Long propertyChecklistId);
 
-    List<PropertyChecklistItem> insertItems(
+    List<AppliedChecklistItem> insertItems(
             Long propertyChecklistId,
-            List<NewPropertyChecklistItem> items);
+            List<AppliedChecklistItemDraft> items);
 
     int updateStatus(
             Long memberId,

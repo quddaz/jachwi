@@ -33,7 +33,7 @@ class PropertyChecklistServiceTest {
     }
 
     @Autowired
-    PropertyChecklistService service;
+    AppliedChecklistService service;
 
     @Autowired
     JdbcTemplate jdbcTemplate;

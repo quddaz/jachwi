@@ -5,8 +5,5 @@ public record LoginResponse(
         String refreshToken,
         String tokenType,
         long expiresIn,
-        MemberResponse member) {
-
-    public record MemberResponse(Long memberId, String name, String email) {
-    }
+        LoginMemberResponse member) {
 }

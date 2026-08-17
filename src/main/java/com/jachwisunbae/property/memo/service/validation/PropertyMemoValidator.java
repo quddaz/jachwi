@@ -1,13 +1,14 @@
 package com.jachwisunbae.property.memo.service.validation;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.stereotype.Component;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand;
-import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand.Item;
+import com.jachwisunbae.property.memo.service.dto.PropertyMemoItemCommand;
 
 @Component
 public class PropertyMemoValidator {
@@ -20,11 +21,20 @@ public class PropertyMemoValidator {
         if (freeMemo.length() > 2000) {
             throw invalid("자유 메모는 2,000자 이하여야 합니다.");
         }
-        List<Item> items = command.items().stream().map(this::validateItem).toList();
+        List<PropertyMemoItemCommand> items = validateItems(command.items());
         return new ReplacePropertyMemoCommand(items, freeMemo);
     }
 
-    private Item validateItem(Item item) {
+    private List<PropertyMemoItemCommand> validateItems(
+            List<PropertyMemoItemCommand> requestedItems) {
+        List<PropertyMemoItemCommand> validated = new ArrayList<>();
+        for (PropertyMemoItemCommand item : requestedItems) {
+            validated.add(validateItem(item));
+        }
+        return List.copyOf(validated);
+    }
+
+    private PropertyMemoItemCommand validateItem(PropertyMemoItemCommand item) {
         if (item == null || item.label() == null) {
             throw invalid("메모 항목명은 필수입니다.");
         }
@@ -36,7 +46,7 @@ public class PropertyMemoValidator {
         if (content.length() > 200) {
             throw invalid("메모 항목 내용은 200자 이하여야 합니다.");
         }
-        return new Item(label, content);
+        return new PropertyMemoItemCommand(label, content);
     }
 
     private BusinessException invalid(String message) {

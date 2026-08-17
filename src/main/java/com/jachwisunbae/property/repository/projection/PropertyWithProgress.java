@@ -1,8 +1,8 @@
-package com.jachwisunbae.property.repository;
+package com.jachwisunbae.property.repository.projection;
 
 import com.jachwisunbae.property.entity.Property;
 
-public record PropertyRow(
+public record PropertyWithProgress(
         Property property,
         long totalCount,
         long completedCount,

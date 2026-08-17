@@ -1,8 +1,8 @@
-package com.jachwisunbae.property.checklist.repository;
+package com.jachwisunbae.property.checklist.entity;
 
 import com.jachwisunbae.property.checklist.type.CheckStatus;
 
-public record NewPropertyChecklistItem(
+public record AppliedChecklistItemDraft(
         Long sourceSystemCheckItemId,
         String question,
         String guide,

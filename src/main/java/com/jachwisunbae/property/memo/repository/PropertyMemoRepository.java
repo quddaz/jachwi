@@ -3,7 +3,8 @@ package com.jachwisunbae.property.memo.repository;
 import java.util.List;
 import java.util.Optional;
 
-import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand.Item;
+import com.jachwisunbae.property.memo.service.dto.PropertyMemoItemCommand;
+import com.jachwisunbae.property.memo.entity.PropertyMemoSnapshot;
 
 public interface PropertyMemoRepository {
 
@@ -13,5 +14,5 @@ public interface PropertyMemoRepository {
 
     void deleteItems(Long propertyMemoId);
 
-    void insertItems(Long propertyMemoId, List<Item> items);
+    void insertItems(Long propertyMemoId, List<PropertyMemoItemCommand> items);
 }

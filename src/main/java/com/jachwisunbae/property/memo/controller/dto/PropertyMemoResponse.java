@@ -2,21 +2,28 @@ package com.jachwisunbae.property.memo.controller.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 import com.jachwisunbae.property.memo.service.dto.PropertyMemoResult;
+import com.jachwisunbae.property.memo.service.dto.PropertyMemoItemResult;
 
-public record PropertyMemoResponse(List<ItemResponse> items, String freeMemo, LocalDateTime savedAt) {
+public record PropertyMemoResponse(
+        List<PropertyMemoItemResponse> items,
+        String freeMemo,
+        LocalDateTime savedAt) {
 
     public static PropertyMemoResponse from(PropertyMemoResult result) {
         return new PropertyMemoResponse(
-                result.items().stream().map(ItemResponse::from).toList(),
+                toItemResponses(result),
                 result.freeMemo(),
                 result.savedAt());
     }
 
-    public record ItemResponse(String label, String content, int order) {
-        private static ItemResponse from(PropertyMemoResult.Item item) {
-            return new ItemResponse(item.label(), item.content(), item.order());
+    private static List<PropertyMemoItemResponse> toItemResponses(PropertyMemoResult result) {
+        List<PropertyMemoItemResponse> responses = new ArrayList<>();
+        for (PropertyMemoItemResult item : result.items()) {
+            responses.add(PropertyMemoItemResponse.from(item));
         }
+        return List.copyOf(responses);
     }
 }

@@ -5,7 +5,7 @@ import com.jachwisunbae.checklist.type.Stage;
 import lombok.Getter;
 
 @Getter
-public class PropertyChecklist {
+public class AppliedChecklist {
 
     private final Long id;
     private final Long propertyId;
@@ -13,7 +13,7 @@ public class PropertyChecklist {
     private final String name;
     private final Stage stage;
 
-    private PropertyChecklist(
+    private AppliedChecklist(
             Long id,
             Long propertyId,
             Long sourceUserChecklistId,
@@ -26,20 +26,20 @@ public class PropertyChecklist {
         this.stage = stage;
     }
 
-    public static PropertyChecklist create(
+    public static AppliedChecklist create(
             Long propertyId,
             Long sourceUserChecklistId,
             String name,
             Stage stage) {
-        return new PropertyChecklist(null, propertyId, sourceUserChecklistId, name, stage);
+        return new AppliedChecklist(null, propertyId, sourceUserChecklistId, name, stage);
     }
 
-    public static PropertyChecklist restore(
+    public static AppliedChecklist restore(
             Long id,
             Long propertyId,
             Long sourceUserChecklistId,
             String name,
             Stage stage) {
-        return new PropertyChecklist(id, propertyId, sourceUserChecklistId, name, stage);
+        return new AppliedChecklist(id, propertyId, sourceUserChecklistId, name, stage);
     }
 }

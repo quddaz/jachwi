@@ -1,25 +1,19 @@
 package com.jachwisunbae.member.repository;
 
 import java.util.Optional;
+import java.util.List;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import com.jachwisunbae.member.entity.Member;
 
 @Repository
 public class JdbcMemberRepository implements MemberRepository {
-
-    private static final RowMapper<Member> ROW_MAPPER = (resultSet, rowNumber) ->
-            Member.restore(
-                    resultSet.getLong("id"),
-                    resultSet.getString("subject"),
-                    resultSet.getString("email"),
-                    resultSet.getString("name"),
-                    resultSet.getTimestamp("last_login_at").toLocalDateTime());
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -29,20 +23,20 @@ public class JdbcMemberRepository implements MemberRepository {
 
     @Override
     public Optional<Member> findById(Long id) {
-        return jdbcTemplate.query("""
+        List<Member> members = jdbcTemplate.query("""
                 SELECT id, subject, email, name, last_login_at
                 FROM members
                 WHERE id = ?
-                """, ROW_MAPPER, id)
-                .stream()
-                .findFirst();
+                """, this::mapMember, id);
+        return first(members);
     }
 
     @Override
     public Optional<Member> findBySubject(String subject) {
-        return jdbcTemplate.query("""
+        List<Member> members = jdbcTemplate.query("""
                 SELECT id, subject, email, name, last_login_at FROM members WHERE subject = ?
-                """, ROW_MAPPER, subject).stream().findFirst();
+                """, this::mapMember, subject);
+        return first(members);
     }
 
     @Override
@@ -66,5 +60,21 @@ public class JdbcMemberRepository implements MemberRepository {
         }, keys);
         return Member.restore(keys.getKey().longValue(), member.getSubject(), member.getEmail(),
                 member.getName(), member.getLastLoginAt());
+    }
+
+    private Member mapMember(ResultSet resultSet, int rowNumber) throws SQLException {
+        return Member.restore(
+                resultSet.getLong("id"),
+                resultSet.getString("subject"),
+                resultSet.getString("email"),
+                resultSet.getString("name"),
+                resultSet.getTimestamp("last_login_at").toLocalDateTime());
+    }
+
+    private Optional<Member> first(List<Member> members) {
+        if (members.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(members.getFirst());
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.repository.projection.PropertyWithProgress;
 
 public interface PropertyRepository {
 
@@ -16,9 +17,13 @@ public interface PropertyRepository {
 
     Property save(Property property);
 
-    List<PropertyRow> findPageByMemberId(Long memberId, String query, int size, long offset);
+    List<PropertyWithProgress> findPageByMemberId(
+            Long memberId,
+            String query,
+            int size,
+            long offset);
 
-    Optional<PropertyRow> findByIdAndMemberId(Long propertyId, Long memberId);
+    Optional<PropertyWithProgress> findByIdAndMemberId(Long propertyId, Long memberId);
 
     int update(Property property);
 

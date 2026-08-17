@@ -1,6 +1,7 @@
 package com.jachwisunbae.property.checklist.controller;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +20,16 @@ import com.jachwisunbae.property.checklist.controller.dto.PropertyChecklistDetai
 import com.jachwisunbae.property.checklist.controller.dto.PropertyChecklistSummaryResponse;
 import com.jachwisunbae.property.checklist.controller.dto.UpdateCheckMemoRequest;
 import com.jachwisunbae.property.checklist.controller.dto.UpdateCheckStatusRequest;
-import com.jachwisunbae.property.checklist.service.PropertyChecklistService;
+import com.jachwisunbae.property.checklist.service.AppliedChecklistService;
+import com.jachwisunbae.property.checklist.service.dto.AppliedChecklistSummaryResult;
 
 @RestController
 @RequestMapping("/api/properties/{propertyId}/checklists")
 public class PropertyChecklistController {
 
-    private final PropertyChecklistService service;
+    private final AppliedChecklistService service;
 
-    public PropertyChecklistController(PropertyChecklistService service) {
+    public PropertyChecklistController(AppliedChecklistService service) {
         this.service = service;
     }
 
@@ -35,9 +37,11 @@ public class PropertyChecklistController {
     public SuccessResponse<List<PropertyChecklistSummaryResponse>> findAll(
             @AuthenticatedMemberId Long memberId,
             @PathVariable Long propertyId) {
-        return SuccessResponse.of(service.findAll(memberId, propertyId).stream()
-                .map(PropertyChecklistSummaryResponse::from)
-                .toList());
+        List<PropertyChecklistSummaryResponse> responses = new ArrayList<>();
+        for (AppliedChecklistSummaryResult result : service.findAll(memberId, propertyId)) {
+            responses.add(PropertyChecklistSummaryResponse.from(result));
+        }
+        return SuccessResponse.of(List.copyOf(responses));
     }
 
     @PutMapping("/{stage}")

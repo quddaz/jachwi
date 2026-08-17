@@ -2,6 +2,8 @@ package com.jachwisunbae.property.memo.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -12,7 +14,8 @@ import java.sql.SQLException;
 
 import com.jachwisunbae.property.memo.entity.PropertyMemo;
 import com.jachwisunbae.property.memo.entity.PropertyMemoItem;
-import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand.Item;
+import com.jachwisunbae.property.memo.entity.PropertyMemoSnapshot;
+import com.jachwisunbae.property.memo.service.dto.PropertyMemoItemCommand;
 
 @Repository
 public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
@@ -29,11 +32,7 @@ public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
                 SELECT id, property_id, free_memo, updated_at
                 FROM property_memos
                 WHERE property_id = ?
-                """, (resultSet, rowNumber) -> PropertyMemo.restore(
-                        resultSet.getLong("id"),
-                        resultSet.getLong("property_id"),
-                        resultSet.getString("free_memo"),
-                        resultSet.getTimestamp("updated_at").toLocalDateTime()), propertyId);
+                """, this::mapMemo, propertyId);
         if (memos.isEmpty()) {
             return Optional.empty();
         }
@@ -43,12 +42,7 @@ public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
                 FROM property_memo_items
                 WHERE property_memo_id = ?
                 ORDER BY display_order
-                """, (resultSet, rowNumber) -> PropertyMemoItem.restore(
-                        resultSet.getLong("id"),
-                        resultSet.getLong("property_memo_id"),
-                        resultSet.getString("label"),
-                        resultSet.getString("content"),
-                        resultSet.getInt("display_order")), memo.getId());
+                """, this::mapItem, memo.getId());
         return Optional.of(new PropertyMemoSnapshot(memo, items));
     }
 
@@ -70,7 +64,7 @@ public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
     }
 
     @Override
-    public void insertItems(Long propertyMemoId, List<Item> items) {
+    public void insertItems(Long propertyMemoId, List<PropertyMemoItemCommand> items) {
         jdbcTemplate.batchUpdate("""
                 INSERT INTO property_memo_items (
                     property_memo_id, label, content, display_order
@@ -79,7 +73,7 @@ public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
                     @Override
                     public void setValues(PreparedStatement statement, int index)
                             throws SQLException {
-                        Item item = items.get(index);
+                        PropertyMemoItemCommand item = items.get(index);
                         statement.setLong(1, propertyMemoId);
                         statement.setString(2, item.label());
                         statement.setString(3, item.content());
@@ -91,5 +85,22 @@ public class JdbcPropertyMemoRepository implements PropertyMemoRepository {
                         return items.size();
                     }
                 });
+    }
+
+    private PropertyMemo mapMemo(ResultSet resultSet, int rowNumber) throws SQLException {
+        return PropertyMemo.restore(
+                resultSet.getLong("id"),
+                resultSet.getLong("property_id"),
+                resultSet.getString("free_memo"),
+                resultSet.getTimestamp("updated_at").toLocalDateTime());
+    }
+
+    private PropertyMemoItem mapItem(ResultSet resultSet, int rowNumber) throws SQLException {
+        return PropertyMemoItem.restore(
+                resultSet.getLong("id"),
+                resultSet.getLong("property_memo_id"),
+                resultSet.getString("label"),
+                resultSet.getString("content"),
+                resultSet.getInt("display_order"));
     }
 }

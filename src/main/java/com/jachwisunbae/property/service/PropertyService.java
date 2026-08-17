@@ -3,6 +3,7 @@ package com.jachwisunbae.property.service;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +12,7 @@ import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.PropertyRepository;
-import com.jachwisunbae.property.repository.PropertyRow;
+import com.jachwisunbae.property.repository.projection.PropertyWithProgress;
 import com.jachwisunbae.property.service.dto.CreatePropertyCommand;
 import com.jachwisunbae.property.service.dto.PropertyPageResult;
 import com.jachwisunbae.property.service.dto.PropertyResult;
@@ -61,10 +62,11 @@ public class PropertyService {
         validator.validatePage(page, size);
         String normalizedQuery = validator.normalizeQuery(query);
         long totalElements = repository.countByMemberIdAndQuery(memberId, normalizedQuery);
-        List<PropertyResult> content = repository.findPageByMemberId(
-                memberId, normalizedQuery, size, (long) page * size).stream()
-                .map(this::toResult)
-                .toList();
+        List<PropertyResult> content = new ArrayList<>();
+        for (PropertyWithProgress row : repository.findPageByMemberId(
+                memberId, normalizedQuery, size, (long) page * size)) {
+            content.add(toResult(row));
+        }
         return PropertyPageResult.of(content, page, size, totalElements);
     }
 
@@ -79,7 +81,7 @@ public class PropertyService {
             Long propertyId,
             UpdatePropertyCommand command) {
         validator.validate(command);
-        Property property = findOwnedRow(propertyId, memberId).property();
+        Property property = findOwnedProperty(propertyId, memberId).property();
         property.update(
                 command.name().present()
                         ? validator.normalizeName(command.name().value())
@@ -108,14 +110,14 @@ public class PropertyService {
     }
 
     private PropertyResult findOwned(Long propertyId, Long memberId) {
-        return toResult(findOwnedRow(propertyId, memberId));
+        return toResult(findOwnedProperty(propertyId, memberId));
     }
 
-    private PropertyRow findOwnedRow(Long propertyId, Long memberId) {
+    private PropertyWithProgress findOwnedProperty(Long propertyId, Long memberId) {
         return repository.findByIdAndMemberId(propertyId, memberId).orElseThrow(this::notFound);
     }
 
-    private PropertyResult toResult(PropertyRow row) {
+    private PropertyResult toResult(PropertyWithProgress row) {
         return PropertyResult.from(
                 row.property(), row.totalCount(), row.completedCount(), row.goodCount(),
                 row.cautionCount(), row.unconfirmedCount());

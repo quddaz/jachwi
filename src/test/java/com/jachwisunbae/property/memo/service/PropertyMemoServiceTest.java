@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
 import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand;
-import com.jachwisunbae.property.memo.service.dto.ReplacePropertyMemoCommand.Item;
+import com.jachwisunbae.property.memo.service.dto.PropertyMemoItemCommand;
 
 @Testcontainers
 @SpringBootTest(properties = "spring.main.web-application-type=none")
@@ -71,7 +71,9 @@ class PropertyMemoServiceTest {
     @Test
     void replacesFreeMemoAndStructuredItemsInRequestOrder() {
         service.replace(memberId, propertyId, new ReplacePropertyMemoCommand(
-                List.of(new Item("입주일", "9월 1일"), new Item("관리비", "수도 포함")),
+                List.of(
+                        new PropertyMemoItemCommand("입주일", "9월 1일"),
+                        new PropertyMemoItemCommand("관리비", "수도 포함")),
                 "채광 재확인"));
 
         var result = service.get(memberId, propertyId);

@@ -1,6 +1,8 @@
 package com.jachwisunbae.property.controller;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +22,7 @@ import com.jachwisunbae.property.controller.dto.CreatePropertyRequest;
 import com.jachwisunbae.property.controller.dto.PropertyResponse;
 import com.jachwisunbae.property.controller.dto.UpdatePropertyRequest;
 import com.jachwisunbae.property.service.PropertyService;
+import com.jachwisunbae.property.service.dto.PropertyResult;
 
 @RestController
 @RequestMapping("/api/properties")
@@ -49,7 +52,7 @@ public class PropertyController {
             @RequestParam(defaultValue = "20") int size) {
         var result = service.findAll(memberId, query, page, size);
         return SuccessResponse.of(new PageResponse<>(
-                result.content().stream().map(PropertyResponse::from).toList(),
+                toResponses(result.content()),
                 result.page(), result.size(), result.totalElements(),
                 result.totalPages(), result.hasNext()));
     }
@@ -76,5 +79,14 @@ public class PropertyController {
             @PathVariable Long propertyId) {
         service.delete(memberId, propertyId);
         return ResponseEntity.noContent().build();
+    }
+
+    private List<PropertyResponse> toResponses(
+            List<PropertyResult> results) {
+        List<PropertyResponse> responses = new ArrayList<>();
+        for (PropertyResult result : results) {
+            responses.add(PropertyResponse.from(result));
+        }
+        return List.copyOf(responses);
     }
 }

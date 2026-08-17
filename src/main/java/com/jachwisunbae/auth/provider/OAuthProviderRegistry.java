@@ -15,7 +15,9 @@ public class OAuthProviderRegistry {
     private final Map<OAuthProviderType, OAuthProvider> providers = new EnumMap<>(OAuthProviderType.class);
 
     public OAuthProviderRegistry(List<OAuthProvider> providers) {
-        providers.forEach(provider -> this.providers.put(provider.type(), provider));
+        for (OAuthProvider provider : providers) {
+            this.providers.put(provider.type(), provider);
+        }
     }
 
     public OAuthProvider get(OAuthProviderType type) {

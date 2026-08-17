@@ -2,12 +2,14 @@ package com.jachwisunbae.auth.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.jachwisunbae.auth.controller.dto.LoginResponse;
+import com.jachwisunbae.auth.controller.dto.LoginMemberResponse;
 import com.jachwisunbae.auth.controller.dto.OAuthLoginRequest;
 import com.jachwisunbae.auth.controller.dto.TokenResponse;
 import com.jachwisunbae.auth.provider.OAuthProfile;
@@ -90,9 +92,11 @@ public class AuthService {
 
     private Member findOrCreateMember(OAuthProfile profile) {
         LocalDateTime now = LocalDateTime.now(clock);
-        return memberRepository.findBySubject(profile.subject())
-                .map(member -> updateMember(member, profile, now))
-                .orElseGet(() -> createMember(profile, now));
+        Optional<Member> existingMember = memberRepository.findBySubject(profile.subject());
+        if (existingMember.isPresent()) {
+            return updateMember(existingMember.get(), profile, now);
+        }
+        return createMember(profile, now);
     }
 
     private Member updateMember(Member member, OAuthProfile profile, LocalDateTime loginAt) {
@@ -115,7 +119,7 @@ public class AuthService {
                 tokens.refreshToken(),
                 tokens.tokenType(),
                 tokens.expiresIn(),
-                new LoginResponse.MemberResponse(
+                new LoginMemberResponse(
                         member.getId(),
                         member.getName(),
                         member.getEmail()));
@@ -127,10 +131,14 @@ public class AuthService {
                     DomainErrorCode.REFRESH_TOKEN_INVALID,
                     "Refresh Token이 비어 있습니다.");
         }
-        return refreshTokenRepository.findByHashForUpdate(refreshTokenHasher.hash(rawRefreshToken))
-                .orElseThrow(() -> new BusinessException(
-                        DomainErrorCode.REFRESH_TOKEN_INVALID,
-                        "등록되지 않은 Refresh Token입니다."));
+        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByHashForUpdate(
+                refreshTokenHasher.hash(rawRefreshToken));
+        if (refreshToken.isEmpty()) {
+            throw new BusinessException(
+                    DomainErrorCode.REFRESH_TOKEN_INVALID,
+                    "등록되지 않은 Refresh Token입니다.");
+        }
+        return refreshToken.get();
     }
 
     private void validateRotatable(RefreshToken token, LocalDateTime now) {

@@ -2,11 +2,12 @@ package com.jachwisunbae.property.checklist.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,33 +20,33 @@ import com.jachwisunbae.checklist.repository.UserChecklistRepository;
 import com.jachwisunbae.checklist.type.Stage;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.property.checklist.entity.PropertyChecklist;
-import com.jachwisunbae.property.checklist.entity.PropertyChecklistItem;
-import com.jachwisunbae.property.checklist.repository.NewPropertyChecklistItem;
-import com.jachwisunbae.property.checklist.repository.PropertyChecklistRepository;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklist;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklistItem;
+import com.jachwisunbae.property.checklist.entity.AppliedChecklistItemDraft;
+import com.jachwisunbae.property.checklist.repository.AppliedChecklistRepository;
 import com.jachwisunbae.property.checklist.service.dto.CheckProgressResult;
-import com.jachwisunbae.property.checklist.service.dto.PropertyChecklistDetailResult;
-import com.jachwisunbae.property.checklist.service.dto.PropertyChecklistSummaryResult;
-import com.jachwisunbae.property.checklist.service.validation.PropertyChecklistValidator;
+import com.jachwisunbae.property.checklist.service.dto.AppliedChecklistDetailResult;
+import com.jachwisunbae.property.checklist.service.dto.AppliedChecklistSummaryResult;
+import com.jachwisunbae.property.checklist.service.validation.AppliedChecklistValidator;
 import com.jachwisunbae.property.checklist.type.CheckStatus;
 import com.jachwisunbae.property.repository.PropertyRepository;
 
 @Service
-public class PropertyChecklistService {
+public class AppliedChecklistService {
 
-    private final PropertyChecklistRepository repository;
+    private final AppliedChecklistRepository repository;
     private final PropertyRepository propertyRepository;
     private final UserChecklistRepository userChecklistRepository;
     private final SystemCheckItemRepository systemCheckItemRepository;
-    private final PropertyChecklistValidator validator;
+    private final AppliedChecklistValidator validator;
     private final Clock clock;
 
-    public PropertyChecklistService(
-            PropertyChecklistRepository repository,
+    public AppliedChecklistService(
+            AppliedChecklistRepository repository,
             PropertyRepository propertyRepository,
             UserChecklistRepository userChecklistRepository,
             SystemCheckItemRepository systemCheckItemRepository,
-            PropertyChecklistValidator validator,
+            AppliedChecklistValidator validator,
             Clock clock) {
         this.repository = repository;
         this.propertyRepository = propertyRepository;
@@ -56,7 +57,7 @@ public class PropertyChecklistService {
     }
 
     @Transactional
-    public PropertyChecklistDetailResult applyOrReplace(
+    public AppliedChecklistDetailResult applyOrReplace(
             Long memberId,
             Long propertyId,
             Stage stage,
@@ -67,8 +68,8 @@ public class PropertyChecklistService {
 
         List<UserChecklistItem> sourceItems = userChecklistRepository.findItems(sourceChecklistId);
         Map<Long, SystemCheckItem> systemItems = findSystemItems(sourceItems);
-        PropertyChecklist checklist = saveRoot(propertyId, stage, source);
-        Map<Long, PreviousResult> previousResults = findPreviousResults(checklist.getId());
+        AppliedChecklist checklist = saveRoot(propertyId, stage, source);
+        Map<Long, PreviousCheckResult> previousResults = findPreviousResults(checklist.getId());
 
         repository.deleteItems(checklist.getId());
         repository.insertItems(
@@ -79,35 +80,46 @@ public class PropertyChecklistService {
     }
 
     @Transactional(readOnly = true)
-    public List<PropertyChecklistSummaryResult> findAll(Long memberId, Long propertyId) {
+    public List<AppliedChecklistSummaryResult> findAll(Long memberId, Long propertyId) {
         validatePropertyOwnership(memberId, propertyId);
-        Map<Stage, PropertyChecklist> byStage = repository.findAllOwned(memberId, propertyId)
-                .stream().collect(Collectors.toMap(PropertyChecklist::getStage, Function.identity()));
-        return List.of(Stage.values()).stream()
-                .map(stage -> toSummary(stage, byStage.get(stage)))
-                .toList();
+        Map<Stage, AppliedChecklist> byStage = mapChecklistsByStage(
+                repository.findAllOwned(memberId, propertyId));
+        List<AppliedChecklistSummaryResult> summaries = new ArrayList<>();
+        for (Stage stage : Stage.values()) {
+            summaries.add(toSummary(stage, byStage.get(stage)));
+        }
+        return List.copyOf(summaries);
     }
 
-    private PropertyChecklistSummaryResult toSummary(
+    private AppliedChecklistSummaryResult toSummary(
             Stage stage,
-            PropertyChecklist checklist) {
+            AppliedChecklist checklist) {
         if (checklist == null) {
-            return new PropertyChecklistSummaryResult(
+            return new AppliedChecklistSummaryResult(
                     null, null, stage, false, CheckProgressResult.from(List.of()));
         }
-        return new PropertyChecklistSummaryResult(
+        return new AppliedChecklistSummaryResult(
                 checklist.getId(), checklist.getName(), stage, true,
                 CheckProgressResult.from(repository.findItems(checklist.getId())));
     }
 
+    private Map<Stage, AppliedChecklist> mapChecklistsByStage(
+            List<AppliedChecklist> checklists) {
+        Map<Stage, AppliedChecklist> byStage = new EnumMap<>(Stage.class);
+        for (AppliedChecklist checklist : checklists) {
+            byStage.put(checklist.getStage(), checklist);
+        }
+        return byStage;
+    }
+
     @Transactional(readOnly = true)
-    public PropertyChecklistDetailResult findOne(
+    public AppliedChecklistDetailResult findOne(
             Long memberId,
             Long propertyId,
             Long propertyChecklistId) {
-        PropertyChecklist checklist = repository.findOwnedById(
+        AppliedChecklist checklist = repository.findOwnedById(
                 memberId, propertyId, propertyChecklistId).orElseThrow(this::notFound);
-        return PropertyChecklistDetailResult.from(
+        return AppliedChecklistDetailResult.from(
                 checklist, repository.findItems(propertyChecklistId));
     }
 
@@ -148,57 +160,73 @@ public class PropertyChecklistService {
     }
 
     private UserChecklist findSourceChecklist(Long memberId, Long sourceChecklistId) {
-        return userChecklistRepository.findActiveByIdAndMemberIdForUpdate(
-                sourceChecklistId, memberId).orElseThrow(() -> new BusinessException(
-                        DomainErrorCode.CHECKLIST_NOT_FOUND,
-                        "적용할 사용자 체크리스트를 찾을 수 없습니다."));
+        Optional<UserChecklist> source = userChecklistRepository
+                .findActiveByIdAndMemberIdForUpdate(sourceChecklistId, memberId);
+        if (source.isEmpty()) {
+            throw new BusinessException(
+                    DomainErrorCode.CHECKLIST_NOT_FOUND,
+                    "적용할 사용자 체크리스트를 찾을 수 없습니다.");
+        }
+        return source.get();
     }
 
     private Map<Long, SystemCheckItem> findSystemItems(List<UserChecklistItem> sourceItems) {
-        List<Long> ids = sourceItems.stream().map(UserChecklistItem::getSystemCheckItemId).toList();
-        return systemCheckItemRepository.findAllByIds(ids).stream()
-                .collect(Collectors.toMap(SystemCheckItem::getId, Function.identity()));
+        List<Long> ids = new ArrayList<>();
+        for (UserChecklistItem sourceItem : sourceItems) {
+            ids.add(sourceItem.getSystemCheckItemId());
+        }
+        Map<Long, SystemCheckItem> systemItems = new HashMap<>();
+        for (SystemCheckItem systemItem : systemCheckItemRepository.findAllByIds(ids)) {
+            systemItems.put(systemItem.getId(), systemItem);
+        }
+        return systemItems;
     }
 
-    private PropertyChecklist saveRoot(
+    private AppliedChecklist saveRoot(
             Long propertyId,
             Stage stage,
             UserChecklist source) {
-        return repository.findByPropertyAndStageForUpdate(propertyId, stage)
-                .map(existing -> repository.save(PropertyChecklist.restore(
-                        existing.getId(), propertyId, source.getId(), source.getName(), stage)))
-                .orElseGet(() -> repository.save(PropertyChecklist.create(
-                        propertyId, source.getId(), source.getName(), stage)));
+        Optional<AppliedChecklist> existing = repository.findByPropertyAndStageForUpdate(
+                propertyId, stage);
+        if (existing.isPresent()) {
+            AppliedChecklist replacement = AppliedChecklist.restore(
+                    existing.get().getId(), propertyId, source.getId(), source.getName(), stage);
+            return repository.save(replacement);
+        }
+        return repository.save(AppliedChecklist.create(
+                propertyId, source.getId(), source.getName(), stage));
     }
 
-    private Map<Long, PreviousResult> findPreviousResults(Long propertyChecklistId) {
-        Map<Long, PreviousResult> previous = new HashMap<>();
-        for (PropertyChecklistItem item : repository.findItems(propertyChecklistId)) {
+    private Map<Long, PreviousCheckResult> findPreviousResults(Long propertyChecklistId) {
+        Map<Long, PreviousCheckResult> previous = new HashMap<>();
+        for (AppliedChecklistItem item : repository.findItems(propertyChecklistId)) {
             previous.put(
                     item.getSourceSystemCheckItemId(),
-                    new PreviousResult(item.getStatus(), item.getMemo()));
+                    new PreviousCheckResult(item.getStatus(), item.getMemo()));
         }
         return previous;
     }
 
-    private List<NewPropertyChecklistItem> createSnapshotItems(
+    private List<AppliedChecklistItemDraft> createSnapshotItems(
             List<UserChecklistItem> sourceItems,
             Map<Long, SystemCheckItem> systemItems,
-            Map<Long, PreviousResult> previousResults) {
-        return sourceItems.stream().map(item -> {
+            Map<Long, PreviousCheckResult> previousResults) {
+        List<AppliedChecklistItemDraft> snapshots = new ArrayList<>();
+        for (UserChecklistItem item : sourceItems) {
             SystemCheckItem systemItem = systemItems.get(item.getSystemCheckItemId());
             if (systemItem == null) {
                 throw new BusinessException(
                         DomainErrorCode.CHECKLIST_ITEM_NOT_FOUND,
                         "시스템 체크 항목을 찾을 수 없습니다.");
             }
-            PreviousResult previous = previousResults.get(item.getSystemCheckItemId());
-            return new NewPropertyChecklistItem(
+            PreviousCheckResult previous = previousResults.get(item.getSystemCheckItemId());
+            snapshots.add(new AppliedChecklistItemDraft(
                     systemItem.getId(), systemItem.getQuestion(), systemItem.getGuide(),
                     item.getDisplayOrder(),
                     previous == null ? CheckStatus.UNCONFIRMED : previous.status(),
-                    previous == null ? "" : previous.memo());
-        }).toList();
+                    previous == null ? "" : previous.memo()));
+        }
+        return List.copyOf(snapshots);
     }
 
     private BusinessException notFound() {
@@ -211,8 +239,5 @@ public class PropertyChecklistService {
         return new BusinessException(
                 DomainErrorCode.PROPERTY_CHECKLIST_ITEM_NOT_FOUND,
                 "매물 체크 항목을 찾을 수 없습니다.");
-    }
-
-    private record PreviousResult(CheckStatus status, String memo) {
     }
 }

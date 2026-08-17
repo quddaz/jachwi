@@ -8,7 +8,7 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.checklist.type.CheckStatus;
 
 @Component
-public class PropertyChecklistValidator {
+public class AppliedChecklistValidator {
 
     public void validateStage(Stage requestedStage, Stage sourceStage) {
         if (requestedStage == null || requestedStage != sourceStage) {

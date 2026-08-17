@@ -5,7 +5,7 @@ import com.jachwisunbae.property.checklist.type.CheckStatus;
 import lombok.Getter;
 
 @Getter
-public class PropertyChecklistItem {
+public class AppliedChecklistItem {
 
     private final Long id;
     private final Long propertyChecklistId;
@@ -16,7 +16,7 @@ public class PropertyChecklistItem {
     private final CheckStatus status;
     private final String memo;
 
-    private PropertyChecklistItem(
+    private AppliedChecklistItem(
             Long id,
             Long propertyChecklistId,
             Long sourceSystemCheckItemId,
@@ -35,7 +35,7 @@ public class PropertyChecklistItem {
         this.memo = memo;
     }
 
-    public static PropertyChecklistItem restore(
+    public static AppliedChecklistItem restore(
             Long id,
             Long propertyChecklistId,
             Long sourceSystemCheckItemId,
@@ -44,7 +44,7 @@ public class PropertyChecklistItem {
             int displayOrder,
             CheckStatus status,
             String memo) {
-        return new PropertyChecklistItem(
+        return new AppliedChecklistItem(
                 id, propertyChecklistId, sourceSystemCheckItemId, question, guide,
                 displayOrder, status, memo);
     }

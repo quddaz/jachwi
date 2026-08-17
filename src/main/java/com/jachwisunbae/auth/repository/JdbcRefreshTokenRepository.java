@@ -1,11 +1,13 @@
 package com.jachwisunbae.auth.repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
@@ -13,16 +15,6 @@ import com.jachwisunbae.auth.token.RefreshToken;
 
 @Repository
 public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
-
-    private static final RowMapper<RefreshToken> ROW_MAPPER = (resultSet, rowNumber) ->
-            RefreshToken.restore(
-                    resultSet.getLong("id"),
-                    resultSet.getLong("member_id"),
-                    resultSet.getString("token_hash"),
-                    resultSet.getTimestamp("expires_at").toLocalDateTime(),
-                    resultSet.getTimestamp("revoked_at") == null
-                            ? null
-                            : resultSet.getTimestamp("revoked_at").toLocalDateTime());
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -32,12 +24,16 @@ public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
 
     @Override
     public Optional<RefreshToken> findByHashForUpdate(String tokenHash) {
-        return jdbcTemplate.query("""
+        List<RefreshToken> tokens = jdbcTemplate.query("""
                 SELECT id, member_id, token_hash, expires_at, revoked_at
                 FROM refresh_tokens
                 WHERE token_hash = ?
                 FOR UPDATE
-                """, ROW_MAPPER, tokenHash).stream().findFirst();
+                """, this::mapRefreshToken, tokenHash);
+        if (tokens.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(tokens.getFirst());
     }
 
     @Override
@@ -75,5 +71,17 @@ public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
                 UPDATE refresh_tokens SET revoked_at = ?
                 WHERE member_id = ? AND revoked_at IS NULL
                 """, revokedAt, memberId);
+    }
+
+    private RefreshToken mapRefreshToken(ResultSet resultSet, int rowNumber) throws SQLException {
+        LocalDateTime revokedAt = resultSet.getTimestamp("revoked_at") == null
+                ? null
+                : resultSet.getTimestamp("revoked_at").toLocalDateTime();
+        return RefreshToken.restore(
+                resultSet.getLong("id"),
+                resultSet.getLong("member_id"),
+                resultSet.getString("token_hash"),
+                resultSet.getTimestamp("expires_at").toLocalDateTime(),
+                revokedAt);
     }
 }
