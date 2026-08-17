@@ -322,6 +322,20 @@ bash gradlew test
 
 테스트는 MySQL Testcontainers를 사용하므로 Docker 실행 환경이 필요합니다.
 
+### API 검증 프론트엔드
+
+`frontend`는 현재 구현된 인증·회원·매물·메모·체크리스트 API를 브라우저에서 직접 검증하는 React 클라이언트입니다. 사진 API는 백엔드 구현 전까지 안내 영역만 표시합니다.
+
+```bash
+cd frontend
+cp .env.example .env.local
+# .env.local에 Google Client ID와 등록된 Redirect URI를 설정합니다.
+pnpm install
+pnpm dev
+```
+
+로컬 검증 구성은 프론트엔드 `http://localhost:5173`, 백엔드 `http://localhost:8081`을 사용합니다. Google Client Secret은 프론트엔드에 전달하지 않고 백엔드의 `GOOGLE_CLIENT_SECRET` 환경변수로만 설정합니다.
+
 ## Flyway 규칙
 
 - 운영 환경에서 적용된 마이그레이션 파일은 수정하지 않습니다.
