@@ -5,10 +5,14 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class GoogleOAuthClient {
 
@@ -25,11 +29,36 @@ public class GoogleOAuthClient {
     public GoogleTokenResponse exchange(String code, String verifier, String redirectUri) {
         try {
             return requestToken(createTokenForm(code, verifier, redirectUri));
+        } catch (RestClientResponseException exception) {
+            log.warn(
+                    "Google token exchange failed: status={}, errorType={}",
+                    exception.getStatusCode().value(),
+                    extractErrorType(exception.getResponseBodyAsString()));
+            throw authenticationFailed();
         } catch (Exception exception) {
-            throw new BusinessException(
-                    DomainErrorCode.GOOGLE_AUTHENTICATION_FAILED,
-                    "Google authorization code 교환에 실패했습니다.");
+            log.warn("Google token exchange failed: type={}", exception.getClass().getSimpleName());
+            throw authenticationFailed();
         }
+    }
+
+    private String extractErrorType(String responseBody) {
+        if (responseBody == null) {
+            return "unknown";
+        }
+        for (String type : new String[] {
+                "invalid_grant", "invalid_client", "invalid_request", "unauthorized_client"
+        }) {
+            if (responseBody.contains(type)) {
+                return type;
+            }
+        }
+        return "unknown";
+    }
+
+    private BusinessException authenticationFailed() {
+        return new BusinessException(
+                DomainErrorCode.GOOGLE_AUTHENTICATION_FAILED,
+                "Google authorization code 교환에 실패했습니다.");
     }
 
     private LinkedMultiValueMap<String, String> createTokenForm(
